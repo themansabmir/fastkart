@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useParcels, useCreateParcel, useUpdateParcel } from "@/hooks/use-parcels";
+import { useCustomers, useCreateCustomer } from "@/hooks/use-customers";
 import { getStatusLabel, getStatusColor, formatDateTime } from "@/lib/utils";
 import {
   Plus,
@@ -14,9 +15,9 @@ import {
   Filter,
   Copy,
   Check,
-  Edit2,
-  Clock,
   Loader2,
+  Truck,
+  ChevronDown,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -34,18 +35,20 @@ const transportModes = ["AIR", "TRUCK", "TRAIN"];
 export default function ParcelsPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedModes, setSelectedModes] = useState<string[]>([]);
+  const [selectedCustomerFilter, setSelectedCustomerFilter] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showModeDropdown, setShowModeDropdown] = useState(false);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [editingParcel, setEditingParcel] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{
-    status?: string;
-    pickupTime?: string;
-    deliveryTime?: string;
-  }>({});
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
 
   const copyPublicLink = (publicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -57,49 +60,18 @@ export default function ParcelsPage() {
 
   const { data, isLoading, error } = useParcels({
     page,
-    limit: 20,
+    limit,
     search,
-    status: statusFilter,
+    status: selectedStatuses.join(","),
+    mode: selectedModes.join(","),
+    customerId: selectedCustomerFilter,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
 
+  const { data: customersData } = useCustomers({});
   const createParcel = useCreateParcel();
   const updateParcel = useUpdateParcel();
-
-  const startEditing = (parcel: { id: string; status: string; pickupTime?: string | null; deliveryTime?: string | null }, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingParcel(parcel.id);
-    setEditValues({
-      status: parcel.status,
-      pickupTime: parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 16) : "",
-      deliveryTime: parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 16) : "",
-    });
-  };
-
-  const cancelEditing = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingParcel(null);
-    setEditValues({});
-  };
-
-  const saveEditing = async (parcelId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await updateParcel.mutateAsync({
-        id: parcelId,
-        data: {
-          status: editValues.status,
-          pickupTime: editValues.pickupTime || null,
-          deliveryTime: editValues.deliveryTime || null,
-        },
-      });
-      setEditingParcel(null);
-      setEditValues({});
-    } catch {
-      // Error handled by mutation
-    }
-  };
 
   const {
     register,
@@ -108,8 +80,6 @@ export default function ParcelsPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      customerName: "",
-      customerPhone: "",
       pickupAddress: "",
       deliveryAddress: "",
       description: "",
@@ -126,9 +96,21 @@ export default function ParcelsPage() {
 
   const onSubmit = async (formData: Record<string, unknown>) => {
     try {
+      if (!selectedCustomerId) {
+        return;
+      }
+
+      const selectedCustomer = customersData?.customers.find(c => c.id === selectedCustomerId);
+      if (!selectedCustomer) {
+        return;
+      }
+
       // Convert numeric fields and handle empty strings
       const payload = {
         ...formData,
+        customerId: selectedCustomerId,
+        customerName: selectedCustomer.name,
+        customerPhone: selectedCustomer.phone,
         weight: formData.weight ? parseFloat(formData.weight as string) : null,
         volume: formData.volume ? parseFloat(formData.volume as string) : null,
         mode: formData.mode || null,
@@ -137,6 +119,7 @@ export default function ParcelsPage() {
       };
       await createParcel.mutateAsync(payload);
       setShowCreateModal(false);
+      setSelectedCustomerId("");
       reset();
     } catch {
       // Error handled by mutation
@@ -171,71 +154,227 @@ export default function ParcelsPage() {
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
-            statusFilter ? "border-primary bg-primary/10" : "border-input"
-          }`}
-        >
-          <Filter className="h-5 w-5" />
-          Filter
-          {statusFilter && (
-            <span
-              className="ml-1 px-2 py-0.5 rounded-full text-xs text-white"
-              style={{ backgroundColor: "#ff7a00" }}
-            >
-              1
-            </span>
-          )}
-        </button>
-      </div>
 
-      {/* Filter dropdown */}
-      {showFilters && (
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-medium">Status</span>
-            {statusFilter && (
-              <button
-                onClick={() => {
-                  setStatusFilter("");
-                  setPage(1);
-                }}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Clear
-              </button>
+        {/* Status Filter Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowStatusDropdown(!showStatusDropdown);
+              setShowModeDropdown(false);
+              setShowCustomerDropdown(false);
+            }}
+            className={`px-4 py-2 rounded-lg border flex items-center gap-2 min-w-[140px] justify-between ${
+              selectedStatuses.length > 0
+                ? "border-primary bg-primary/10"
+                : "border-input"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span className="text-sm">Status</span>
+            </div>
+            {selectedStatuses.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs text-white bg-primary">
+                {selectedStatuses.length}
+              </span>
             )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {statuses.map((status) => (
-              <button
-                key={status}
-                onClick={() => {
-                  setStatusFilter(statusFilter === status ? "" : status);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                  statusFilter === status
-                    ? "text-white"
-                    : "bg-muted text-foreground hover:bg-muted/80"
-                }`}
-                style={
-                  statusFilter === status ? { backgroundColor: "#ff7a00" } : {}
-                }
-              >
-                {getStatusLabel(status)}
-              </button>
-            ))}
-          </div>
+          </button>
+          {showStatusDropdown && (
+            <div className="absolute top-full mt-2 left-0 bg-card border border-border rounded-lg shadow-lg p-3 min-w-[200px] z-10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Filter by Status</span>
+                {selectedStatuses.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setSelectedStatuses([]);
+                      setPage(1);
+                    }}
+                    className="text-xs text-primary hover:text-primary/80"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {statuses.map((status) => (
+                  <label
+                    key={status}
+                    className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedStatuses.includes(status)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedStatuses([...selectedStatuses, status]);
+                        } else {
+                          setSelectedStatuses(selectedStatuses.filter((s) => s !== status));
+                        }
+                        setPage(1);
+                      }}
+                      className="rounded border-input text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">{getStatusLabel(status)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Mode Filter Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowModeDropdown(!showModeDropdown);
+              setShowStatusDropdown(false);
+              setShowCustomerDropdown(false);
+            }}
+            className={`px-4 py-2 rounded-lg border flex items-center gap-2 min-w-[140px] justify-between ${
+              selectedModes.length > 0
+                ? "border-primary bg-primary/10"
+                : "border-input"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              <span className="text-sm">Mode</span>
+            </div>
+            {selectedModes.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs text-white bg-primary">
+                {selectedModes.length}
+              </span>
+            )}
+          </button>
+          {showModeDropdown && (
+            <div className="absolute top-full mt-2 left-0 bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px] z-10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Filter by Mode</span>
+                {selectedModes.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setSelectedModes([]);
+                      setPage(1);
+                    }}
+                    className="text-xs text-primary hover:text-primary/80"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {transportModes.map((mode) => (
+                  <label
+                    key={mode}
+                    className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedModes.includes(mode)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedModes([...selectedModes, mode]);
+                        } else {
+                          setSelectedModes(selectedModes.filter((m) => m !== mode));
+                        }
+                        setPage(1);
+                      }}
+                      className="rounded border-input text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">{mode}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Customer Filter Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowCustomerDropdown(!showCustomerDropdown);
+              setShowStatusDropdown(false);
+              setShowModeDropdown(false);
+            }}
+            className={`px-4 py-2 rounded-lg border flex items-center gap-2 min-w-[140px] justify-between ${
+              selectedCustomerFilter
+                ? "border-primary bg-primary/10"
+                : "border-input"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span className="text-sm">Customer</span>
+            </div>
+            {selectedCustomerFilter && (
+              <span className="px-2 py-0.5 rounded-full text-xs text-white bg-primary">
+                1
+              </span>
+            )}
+          </button>
+          {showCustomerDropdown && (
+            <div className="absolute top-full mt-2 left-0 bg-card border border-border rounded-lg shadow-lg p-3 min-w-[250px] z-10 max-h-[300px] overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Filter by Customer</span>
+                {selectedCustomerFilter && (
+                  <button
+                    onClick={() => {
+                      setSelectedCustomerFilter("");
+                      setPage(1);
+                    }}
+                    className="text-xs text-primary hover:text-primary/80"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1">
+                {customersData?.customers.map((customer) => (
+                  <button
+                    key={customer.id}
+                    onClick={() => {
+                      setSelectedCustomerFilter(customer.id);
+                      setShowCustomerDropdown(false);
+                      setPage(1);
+                    }}
+                    className={`w-full text-left p-2 rounded hover:bg-muted text-sm ${
+                      selectedCustomerFilter === customer.id ? "bg-primary/10" : ""
+                    }`}
+                  >
+                    <div className="font-medium">{customer.name}</div>
+                    <div className="text-xs text-muted-foreground">{customer.phone}</div>
+                  </button>
+                ))}
+                {(!customersData?.customers || customersData.customers.length === 0) && (
+                  <div className="text-sm text-muted-foreground p-2">No customers found</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {selectedStatuses.length > 0 || selectedModes.length > 0 || selectedCustomerFilter ? (
+          <button
+            onClick={() => {
+              setSelectedStatuses([]);
+              setSelectedModes([]);
+              setSelectedCustomerFilter("");
+              setPage(1);
+            }}
+            className="px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors text-sm"
+          >
+            Clear All
+          </button>
+        ) : null}
+      </div>
 
       {/* Table */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground">
-            Loading parcels...
+          <div className="p-12 flex flex-col items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading parcels...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center text-red-600">
@@ -243,12 +382,60 @@ export default function ParcelsPage() {
           </div>
         ) : data?.parcels.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
-            {search || statusFilter
+            {search || selectedStatuses.length > 0 || selectedModes.length > 0
               ? "No parcels match your filters."
               : "No parcels yet. Create your first parcel to get started."}
           </div>
         ) : (
           <>
+            {/* Pagination - Top */}
+            {data && data.pagination.total > 0 && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-3 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Page {data.pagination.page} of {data.pagination.totalPages} (
+                    {data.pagination.total} total)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Show:</label>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setPage(1);
+                      }}
+                      className="px-2 py-1 rounded border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-2 rounded-lg border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPage((p) =>
+                        Math.min(data.pagination.totalPages, p + 1)
+                      )
+                    }
+                    disabled={page === data.pagination.totalPages}
+                    className="p-2 rounded-lg border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
@@ -259,6 +446,15 @@ export default function ParcelsPage() {
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Customer
+                    </th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                      Mode
+                    </th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                      Pickup Address
+                    </th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                      Delivery Address
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Status
@@ -278,20 +474,27 @@ export default function ParcelsPage() {
                   {data?.parcels.map((parcel) => (
                     <tr
                       key={parcel.id}
-                      onClick={() => {
-                        if (editingParcel !== parcel.id) {
-                          setNavigatingTo(parcel.id);
-                          router.push(`/parcels/${parcel.id}`);
-                        }
-                      }}
-                      className={`hover:bg-muted/50 transition-colors ${editingParcel === parcel.id ? '' : 'cursor-pointer'}`}
+                      className="hover:bg-muted/50 transition-colors"
                     >
                       <td className="px-4 py-3 font-mono text-sm">
                         <div className="flex items-center gap-2">
-                          {navigatingTo === parcel.id && (
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          )}
-                          {parcel.trackingId}
+                          <span>{parcel.trackingId}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(parcel.trackingId);
+                              setCopiedId(parcel.trackingId);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Copy tracking ID"
+                          >
+                            {copiedId === parcel.trackingId ? (
+                              <Check className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Copy className="h-3 w-3 text-muted-foreground" />
+                            )}
+                          </button>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -303,116 +506,96 @@ export default function ParcelsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {editingParcel === parcel.id ? (
-                          <select
-                            value={editValues.status || parcel.status}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setEditValues({ ...editValues, status: e.target.value });
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                          >
-                            {statuses.map((status) => (
-                              <option key={status} value={status}>
-                                {getStatusLabel(status)}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span
-                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              parcel.status
-                            )}`}
-                          >
-                            {getStatusLabel(parcel.status)}
-                          </span>
-                        )}
+                        <span className="text-sm">{parcel.mode || "-"}</span>
                       </td>
                       <td className="px-4 py-3">
-                        {editingParcel === parcel.id ? (
-                          <input
-                            type="datetime-local"
-                            value={editValues.pickupTime || ""}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setEditValues({ ...editValues, pickupTime: e.target.value });
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                          />
-                        ) : (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : "Not set"}
-                          </div>
-                        )}
+                        <p className="text-sm text-muted-foreground max-w-xs truncate">
+                          {parcel.pickupAddress}
+                        </p>
                       </td>
                       <td className="px-4 py-3">
-                        {editingParcel === parcel.id ? (
-                          <input
-                            type="datetime-local"
-                            value={editValues.deliveryTime || ""}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setEditValues({ ...editValues, deliveryTime: e.target.value });
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                          />
-                        ) : (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : "Not set"}
-                          </div>
-                        )}
+                        <p className="text-sm text-muted-foreground max-w-xs truncate">
+                          {parcel.deliveryAddress}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={parcel.status}
+                          onChange={(e) => {
+                            updateParcel.mutate({
+                              id: parcel.id,
+                              data: { status: e.target.value },
+                            });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          {statuses.map((status) => (
+                            <option key={status} value={status}>
+                              {getStatusLabel(status)}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="datetime-local"
+                          value={parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 16) : ""}
+                          onChange={(e) => {
+                            updateParcel.mutate({
+                              id: parcel.id,
+                              data: { pickupTime: e.target.value || null },
+                            });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring w-full"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="datetime-local"
+                          value={parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 16) : ""}
+                          onChange={(e) => {
+                            updateParcel.mutate({
+                              id: parcel.id,
+                              data: { deliveryTime: e.target.value || null },
+                            });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring w-full"
+                        />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          {editingParcel === parcel.id ? (
-                            <>
-                              <button
-                                onClick={(e) => saveEditing(parcel.id, e)}
-                                disabled={updateParcel.isPending}
-                                className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600"
-                                title="Save changes"
-                              >
-                                {updateParcel.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Check className="h-4 w-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={cancelEditing}
-                                className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
-                                title="Cancel"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={(e) => startEditing(parcel, e)}
-                                className="p-2 hover:bg-muted rounded-lg transition-colors"
-                                title="Quick edit status & times"
-                              >
-                                <Edit2 className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                              <button
-                                onClick={(e) => copyPublicLink(parcel.publicId, e)}
-                                className="p-2 hover:bg-muted rounded-lg transition-colors"
-                                title="Copy public tracking link"
-                              >
-                                {copiedId === parcel.publicId ? (
-                                  <Check className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <Copy className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </button>
-                            </>
-                          )}
+                          <button
+                            onClick={() => {
+                              setNavigatingTo(parcel.id);
+                              router.push(`/parcels/${parcel.id}`);
+                            }}
+                            disabled={navigatingTo === parcel.id}
+                            className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1"
+                            title="View details"
+                          >
+                            {navigatingTo === parcel.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "View"
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyPublicLink(parcel.publicId, e);
+                            }}
+                            className="p-2 hover:bg-muted rounded-lg transition-colors"
+                            title="Copy public tracking link"
+                          >
+                            {copiedId === parcel.publicId ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -460,12 +643,30 @@ export default function ParcelsPage() {
             </div>
 
             {/* Pagination */}
-            {data && data.pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-                <p className="text-sm text-muted-foreground">
-                  Page {data.pagination.page} of {data.pagination.totalPages} (
-                  {data.pagination.total} total)
-                </p>
+            {data && data.pagination.total > 0 && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-3 border-t border-border">
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Page {data.pagination.page} of {data.pagination.totalPages} (
+                    {data.pagination.total} total)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Show:</label>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setPage(1);
+                      }}
+                      className="px-2 py-1 rounded border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -512,30 +713,83 @@ export default function ParcelsPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Customer Name *
+                  Customer *
                 </label>
-                <input
-                  {...register("customerName")}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                {errors.customerName && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.customerName.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Customer Phone *
-                </label>
-                <input
-                  {...register("customerPhone")}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                {errors.customerPhone && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.customerPhone.message}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setCustomerComboboxOpen(!customerComboboxOpen)}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring text-left flex items-center justify-between"
+                  >
+                    <span className={selectedCustomerId ? "text-foreground" : "text-muted-foreground"}>
+                      {selectedCustomerId
+                        ? customersData?.customers.find((c) => c.id === selectedCustomerId)?.name || "Select a customer"
+                        : "Select a customer"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  {customerComboboxOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
+                      <div className="p-2 border-b border-border">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="Search customers..."
+                            value={customerSearchQuery}
+                            onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="overflow-y-auto">
+                        {customersData?.customers
+                          .filter((customer) =>
+                            customerSearchQuery
+                              ? customer.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                                customer.phone.includes(customerSearchQuery) ||
+                                customer.businessName?.toLowerCase().includes(customerSearchQuery.toLowerCase())
+                              : true
+                          )
+                          .map((customer) => (
+                            <button
+                              key={customer.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCustomerId(customer.id);
+                                setCustomerComboboxOpen(false);
+                                setCustomerSearchQuery("");
+                              }}
+                              className={`w-full text-left px-3 py-2 hover:bg-muted transition-colors ${
+                                selectedCustomerId === customer.id ? "bg-primary/10" : ""
+                              }`}
+                            >
+                              <div className="font-medium text-sm">{customer.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {customer.phone}
+                                {customer.businessName && ` • ${customer.businessName}`}
+                              </div>
+                            </button>
+                          ))}
+                        {customersData?.customers.filter((customer) =>
+                          customerSearchQuery
+                            ? customer.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                              customer.phone.includes(customerSearchQuery) ||
+                              customer.businessName?.toLowerCase().includes(customerSearchQuery.toLowerCase())
+                            : true
+                        ).length === 0 && (
+                          <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                            No customers found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {!selectedCustomerId && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Please select a customer from the list
                   </p>
                 )}
               </div>
@@ -618,10 +872,10 @@ export default function ParcelsPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Mode
+                    Mode *
                   </label>
                   <select
-                    {...register("mode")}
+                    {...register("mode", { required: "Mode is required" })}
                     className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select mode</option>
@@ -631,6 +885,11 @@ export default function ParcelsPage() {
                       </option>
                     ))}
                   </select>
+                  {errors.mode && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.mode.message}
+                    </p>
+                  )}
                 </div>
               </div>
 

@@ -14,8 +14,9 @@ export interface IParcel {
   _id: mongoose.Types.ObjectId;
   publicId: string; // UUID used in public URLs
   trackingId: string; // human-friendly tracking code
-  customerName: string;
-  customerPhone: string;
+  customer: mongoose.Types.ObjectId; // Reference to Customer
+  customerName: string; // Denormalized for backward compatibility
+  customerPhone: string; // Denormalized for backward compatibility
   pickupAddress: string;
   deliveryAddress: string;
   description: string;
@@ -37,6 +38,7 @@ const ParcelSchema = new Schema<IParcel>(
   {
     publicId: { type: String, required: true, unique: true, index: true },
     trackingId: { type: String, required: true, unique: true, index: true },
+    customer: { type: Schema.Types.ObjectId, ref: "Customer", required: true },
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     pickupAddress: { type: String, required: true },

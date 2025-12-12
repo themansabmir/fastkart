@@ -9,12 +9,14 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/parcels", label: "Parcels", icon: Package },
+  { href: "/customers", label: "Customers", icon: Users },
 ];
 
 export default function AdminLayout({

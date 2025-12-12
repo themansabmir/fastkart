@@ -51,6 +51,8 @@ interface ParcelFilters {
   limit?: number;
   search?: string;
   status?: string;
+  mode?: string;
+  customerId?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
@@ -61,6 +63,8 @@ export function useParcels(filters: ParcelFilters = {}) {
   if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.search) params.set("search", filters.search);
   if (filters.status) params.set("status", filters.status);
+  if (filters.mode) params.set("mode", filters.mode);
+  if (filters.customerId) params.set("customerId", filters.customerId);
   if (filters.sortBy) params.set("sortBy", filters.sortBy);
   if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
 

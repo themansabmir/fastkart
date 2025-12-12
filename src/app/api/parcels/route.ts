@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 
 import { connectDB } from "@/lib/db";
 import { Parcel } from "@/lib/models/Parcel";
@@ -34,9 +35,11 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = parseInt(searchParams.get("limit") || "50");
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
+    const mode = searchParams.get("mode") || "";
+    const customerId = searchParams.get("customerId") || "";
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
@@ -52,7 +55,27 @@ export async function GET(req: NextRequest) {
     }
 
     if (status) {
-      query.status = status;
+      const statusArray = status.split(",").filter(Boolean);
+      if (statusArray.length > 0) {
+        query.status = { $in: statusArray };
+      }
+    }
+
+    if (mode) {
+      const modeArray = mode.split(",").filter(Boolean);
+      if (modeArray.length > 0) {
+        query.mode = { $in: modeArray };
+      }
+    }
+
+    if (customerId) {
+      // Convert string ID to MongoDB ObjectId for querying
+      try {
+        query.customer = new mongoose.Types.ObjectId(customerId);
+      } catch {
+        // Invalid ObjectId format, skip filter
+        logger.warn("Invalid customerId format", { customerId });
+      }
     }
 
     const total = await Parcel.countDocuments(query);
@@ -153,6 +176,7 @@ export async function POST(req: NextRequest) {
 
     const parcel = await Parcel.create({
       ...parsed.data,
+      customer: parsed.data.customerId,
       publicId: generatePublicId(),
       trackingId: generateTrackingId(),
       pickupTime: parsed.data.pickupTime

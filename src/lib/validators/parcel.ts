@@ -15,6 +15,7 @@ export type ParcelStatus = z.infer<typeof parcelStatusEnum>;
 export type TransportMode = z.infer<typeof transportModeEnum>;
 
 export const createParcelSchema = z.object({
+  customerId: z.string().min(1, "Customer is required"),
   customerName: z.string().min(1, "Customer name is required").max(100),
   customerPhone: z.string().min(1, "Customer phone is required").max(20),
   pickupAddress: z.string().min(1, "Pickup address is required").max(500),
@@ -22,7 +23,7 @@ export const createParcelSchema = z.object({
   description: z.string().min(1, "Description is required").max(1000),
   weight: z.number().positive().optional().nullable(),
   volume: z.number().positive().optional().nullable(),
-  mode: transportModeEnum.optional().nullable(),
+  mode: transportModeEnum,
   pickupTime: z.string().optional().nullable(),
   deliveryTime: z.string().optional().nullable(),
   status: parcelStatusEnum.default("PENDING"),
