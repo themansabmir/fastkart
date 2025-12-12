@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useParcelStats } from "@/hooks/use-parcels";
 import { getStatusLabel, getStatusColor, formatDateTime } from "@/lib/utils";
 import Link from "next/link";
@@ -10,6 +12,7 @@ import {
   CheckCircle,
   RotateCcw,
   MapPin,
+  Loader2,
 } from "lucide-react";
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -22,6 +25,8 @@ const statusIcons: Record<string, React.ElementType> = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
   const { data, isLoading, error } = useParcelStats();
 
   if (isLoading) {
@@ -176,16 +181,24 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-3">
             {stats.recentParcels.map((parcel) => (
-              <Link
+              <div
                 key={parcel.id}
-                href={`/parcels/${parcel.id}`}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
+                onClick={() => {
+                  setNavigatingTo(parcel.id);
+                  router.push(`/parcels/${parcel.id}`);
+                }}
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
               >
-                <div>
-                  <p className="font-medium">{parcel.customerName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {parcel.trackingId}
-                  </p>
+                <div className="flex items-center gap-2">
+                  {navigatingTo === parcel.id && (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  )}
+                  <div>
+                    <p className="font-medium">{parcel.customerName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {parcel.trackingId}
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <span
@@ -199,7 +212,7 @@ export default function DashboardPage() {
                     {formatDateTime(parcel.createdAt)}
                   </p>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

@@ -18,6 +18,7 @@ import {
   MapPin,
   CheckCircle,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,8 +53,14 @@ export default function ParcelDetailPage({
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isNavigatingBack, setIsNavigatingBack] = useState(false);
 
   const parcel = data?.parcel;
+
+  const handleBackClick = () => {
+    setIsNavigatingBack(true);
+    router.push("/parcels");
+  };
 
   const copyPublicLink = () => {
     const url = `${window.location.origin}/parcel/${id}`;
@@ -142,12 +149,17 @@ export default function ParcelDetailPage({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link
-            href="/parcels"
+          <button
+            onClick={handleBackClick}
+            disabled={isNavigatingBack}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+            {isNavigatingBack ? (
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            ) : (
+              <ArrowLeft className="h-5 w-5" />
+            )}
+          </button>
           <div>
             <h1 className="text-2xl font-bold">{parcel.trackingId}</h1>
             <p className="text-muted-foreground">{parcel.customerName}</p>
@@ -247,7 +259,7 @@ export default function ParcelDetailPage({
               key={status}
               onClick={() => handleStatusChange(status)}
               disabled={updateParcel.isPending}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 parcel.status === status
                   ? "text-white"
                   : "bg-muted hover:bg-muted/80"
@@ -256,6 +268,9 @@ export default function ParcelDetailPage({
                 parcel.status === status ? { backgroundColor: "#ff7a00" } : {}
               }
             >
+              {updateParcel.isPending && (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              )}
               {getStatusLabel(status)}
             </button>
           ))}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useParcels, useCreateParcel } from "@/hooks/use-parcels";
+import { useParcels, useCreateParcel, useUpdateParcel } from "@/hooks/use-parcels";
 import { getStatusLabel, getStatusColor, formatDateTime } from "@/lib/utils";
 import {
   Plus,
@@ -14,6 +14,9 @@ import {
   Filter,
   Copy,
   Check,
+  Edit2,
+  Clock,
+  Loader2,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -36,6 +39,13 @@ export default function ParcelsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingParcel, setEditingParcel] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{
+    status?: string;
+    pickupTime?: string;
+    deliveryTime?: string;
+  }>({});
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
   const copyPublicLink = (publicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -55,6 +65,41 @@ export default function ParcelsPage() {
   });
 
   const createParcel = useCreateParcel();
+  const updateParcel = useUpdateParcel();
+
+  const startEditing = (parcel: { id: string; status: string; pickupTime?: string | null; deliveryTime?: string | null }, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingParcel(parcel.id);
+    setEditValues({
+      status: parcel.status,
+      pickupTime: parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 16) : "",
+      deliveryTime: parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 16) : "",
+    });
+  };
+
+  const cancelEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingParcel(null);
+    setEditValues({});
+  };
+
+  const saveEditing = async (parcelId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await updateParcel.mutateAsync({
+        id: parcelId,
+        data: {
+          status: editValues.status,
+          pickupTime: editValues.pickupTime || null,
+          deliveryTime: editValues.deliveryTime || null,
+        },
+      });
+      setEditingParcel(null);
+      setEditValues({});
+    } catch {
+      // Error handled by mutation
+    }
+  };
 
   const {
     register,
@@ -216,16 +261,13 @@ export default function ParcelsPage() {
                       Customer
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Pickup
-                    </th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Delivery
-                    </th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Status
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Created
+                      Pickup Time
+                    </th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                      Delivery Time
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Actions
@@ -236,11 +278,21 @@ export default function ParcelsPage() {
                   {data?.parcels.map((parcel) => (
                     <tr
                       key={parcel.id}
-                      onClick={() => router.push(`/parcels/${parcel.id}`)}
-                      className="hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        if (editingParcel !== parcel.id) {
+                          setNavigatingTo(parcel.id);
+                          router.push(`/parcels/${parcel.id}`);
+                        }
+                      }}
+                      className={`hover:bg-muted/50 transition-colors ${editingParcel === parcel.id ? '' : 'cursor-pointer'}`}
                     >
                       <td className="px-4 py-3 font-mono text-sm">
-                        {parcel.trackingId}
+                        <div className="flex items-center gap-2">
+                          {navigatingTo === parcel.id && (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          )}
+                          {parcel.trackingId}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div>
@@ -250,36 +302,118 @@ export default function ParcelsPage() {
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm max-w-[200px] truncate">
-                        {parcel.pickupAddress}
-                      </td>
-                      <td className="px-4 py-3 text-sm max-w-[200px] truncate">
-                        {parcel.deliveryAddress}
+                      <td className="px-4 py-3">
+                        {editingParcel === parcel.id ? (
+                          <select
+                            value={editValues.status || parcel.status}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setEditValues({ ...editValues, status: e.target.value });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {statuses.map((status) => (
+                              <option key={status} value={status}>
+                                {getStatusLabel(status)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              parcel.status
+                            )}`}
+                          >
+                            {getStatusLabel(parcel.status)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            parcel.status
-                          )}`}
-                        >
-                          {getStatusLabel(parcel.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {formatDateTime(parcel.createdAt)}
+                        {editingParcel === parcel.id ? (
+                          <input
+                            type="datetime-local"
+                            value={editValues.pickupTime || ""}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setEditValues({ ...editValues, pickupTime: e.target.value });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : "Not set"}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={(e) => copyPublicLink(parcel.publicId, e)}
-                          className="p-2 hover:bg-muted rounded-lg transition-colors"
-                          title="Copy public tracking link"
-                        >
-                          {copiedId === parcel.publicId ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                        {editingParcel === parcel.id ? (
+                          <input
+                            type="datetime-local"
+                            value={editValues.deliveryTime || ""}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setEditValues({ ...editValues, deliveryTime: e.target.value });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : "Not set"}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {editingParcel === parcel.id ? (
+                            <>
+                              <button
+                                onClick={(e) => saveEditing(parcel.id, e)}
+                                disabled={updateParcel.isPending}
+                                className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600"
+                                title="Save changes"
+                              >
+                                {updateParcel.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                                title="Cancel"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </>
                           ) : (
-                            <Copy className="h-4 w-4 text-muted-foreground" />
+                            <>
+                              <button
+                                onClick={(e) => startEditing(parcel, e)}
+                                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                                title="Quick edit status & times"
+                              >
+                                <Edit2 className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={(e) => copyPublicLink(parcel.publicId, e)}
+                                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                                title="Copy public tracking link"
+                              >
+                                {copiedId === parcel.publicId ? (
+                                  <Check className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <Copy className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </button>
+                            </>
                           )}
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -290,17 +424,25 @@ export default function ParcelsPage() {
             {/* Mobile list */}
             <div className="md:hidden divide-y divide-border">
               {data?.parcels.map((parcel) => (
-                <Link
+                <div
                   key={parcel.id}
-                  href={`/parcels/${parcel.id}`}
-                  className="block p-4 hover:bg-muted/50 transition-colors"
+                  onClick={() => {
+                    setNavigatingTo(parcel.id);
+                    router.push(`/parcels/${parcel.id}`);
+                  }}
+                  className="block p-4 hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium">{parcel.customerName}</p>
-                      <p className="text-sm font-mono text-muted-foreground">
-                        {parcel.trackingId}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      {navigatingTo === parcel.id && (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      )}
+                      <div>
+                        <p className="font-medium">{parcel.customerName}</p>
+                        <p className="text-sm font-mono text-muted-foreground">
+                          {parcel.trackingId}
+                        </p>
+                      </div>
                     </div>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -313,7 +455,7 @@ export default function ParcelsPage() {
                   <p className="text-sm text-muted-foreground truncate">
                     {parcel.pickupAddress} → {parcel.deliveryAddress}
                   </p>
-                </Link>
+                </div>
               ))}
             </div>
 
