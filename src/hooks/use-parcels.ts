@@ -3,15 +3,20 @@ import { toast } from "@/components/ui/toaster";
 
 interface Parcel {
   id: string;
+  publicId: string;
   trackingId: string;
   customerName: string;
   customerPhone: string;
   pickupAddress: string;
   deliveryAddress: string;
   description: string;
+  weight?: number | null;
+  volume?: number | null;
+  mode?: string | null;
+  pickupTime?: string | null;
+  deliveryTime?: string | null;
   status: string;
   internalNotes?: string;
-  deliveryDate?: string;
   assignedRider?: string;
   proofUrls?: string[];
   createdAt: string;

@@ -12,6 +12,8 @@ import {
   ChevronRight,
   X,
   Filter,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -24,6 +26,8 @@ const statuses = [
   "RETURNED",
 ];
 
+const transportModes = ["AIR", "TRUCK", "TRAIN"];
+
 export default function ParcelsPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -31,6 +35,15 @@ export default function ParcelsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyPublicLink = (publicId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/parcel/${publicId}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(publicId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const { data, isLoading, error } = useParcels({
     page,
@@ -55,6 +68,11 @@ export default function ParcelsPage() {
       pickupAddress: "",
       deliveryAddress: "",
       description: "",
+      weight: "",
+      volume: "",
+      mode: "",
+      pickupTime: "",
+      deliveryTime: "",
       status: "PENDING" as const,
       internalNotes: "",
       assignedRider: "",
@@ -63,7 +81,16 @@ export default function ParcelsPage() {
 
   const onSubmit = async (formData: Record<string, unknown>) => {
     try {
-      await createParcel.mutateAsync(formData);
+      // Convert numeric fields and handle empty strings
+      const payload = {
+        ...formData,
+        weight: formData.weight ? parseFloat(formData.weight as string) : null,
+        volume: formData.volume ? parseFloat(formData.volume as string) : null,
+        mode: formData.mode || null,
+        pickupTime: formData.pickupTime || null,
+        deliveryTime: formData.deliveryTime || null,
+      };
+      await createParcel.mutateAsync(payload);
       setShowCreateModal(false);
       reset();
     } catch {
@@ -200,6 +227,9 @@ export default function ParcelsPage() {
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Created
                     </th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -237,6 +267,19 @@ export default function ParcelsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {formatDateTime(parcel.createdAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => copyPublicLink(parcel.publicId, e)}
+                          className="p-2 hover:bg-muted rounded-lg transition-colors"
+                          title="Copy public tracking link"
+                        >
+                          {copiedId === parcel.publicId ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -402,6 +445,75 @@ export default function ParcelsPage() {
                     {errors.description.message}
                   </p>
                 )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    {...register("weight")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Volume (m³)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    {...register("volume")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="0.000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Mode
+                  </label>
+                  <select
+                    {...register("mode")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select mode</option>
+                    {transportModes.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode.charAt(0) + mode.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Pickup Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    {...register("pickupTime")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Delivery Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    {...register("deliveryTime")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/db";
 import { Parcel } from "@/lib/models/Parcel";
-import { verifyAuthToken } from "@/lib/auth";
+import { verifyAuthTokenEdge } from "@/lib/auth-edge";
 import { createParcelSchema } from "@/lib/validators/parcel";
 import { generatePublicId, generateTrackingId } from "@/lib/utils";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAuthToken(token);
+    const payload = await verifyAuthTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -58,15 +58,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       parcels: parcels.map((p) => ({
         id: p.publicId,
+        publicId: p.publicId,
         trackingId: p.trackingId,
         customerName: p.customerName,
         customerPhone: p.customerPhone,
         pickupAddress: p.pickupAddress,
         deliveryAddress: p.deliveryAddress,
         description: p.description,
+        weight: p.weight,
+        volume: p.volume,
+        mode: p.mode,
+        pickupTime: p.pickupTime,
+        deliveryTime: p.deliveryTime,
         status: p.status,
         internalNotes: p.internalNotes,
-        deliveryDate: p.deliveryDate,
         assignedRider: p.assignedRider,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAuthToken(token);
+    const payload = await verifyAuthTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -129,8 +134,11 @@ export async function POST(req: NextRequest) {
       ...parsed.data,
       publicId: generatePublicId(),
       trackingId: generateTrackingId(),
-      deliveryDate: parsed.data.deliveryDate
-        ? new Date(parsed.data.deliveryDate)
+      pickupTime: parsed.data.pickupTime
+        ? new Date(parsed.data.pickupTime)
+        : null,
+      deliveryTime: parsed.data.deliveryTime
+        ? new Date(parsed.data.deliveryTime)
         : null,
       createdBy: payload.userId,
     });

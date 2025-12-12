@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/db";
 import { Parcel } from "@/lib/models/Parcel";
-import { verifyAuthToken } from "@/lib/auth";
+import { verifyAuthTokenEdge } from "@/lib/auth-edge";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAuthToken(token);
+    const payload = await verifyAuthTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

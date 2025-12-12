@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/db";
 import { Parcel } from "@/lib/models/Parcel";
-import { verifyAuthToken } from "@/lib/auth";
+import { verifyAuthTokenEdge } from "@/lib/auth-edge";
 import { updateParcelSchema } from "@/lib/validators/parcel";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAuthToken(token);
+    const payload = await verifyAuthTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -38,15 +38,20 @@ export async function GET(
     return NextResponse.json({
       parcel: {
         id: parcel.publicId,
+        publicId: parcel.publicId,
         trackingId: parcel.trackingId,
         customerName: parcel.customerName,
         customerPhone: parcel.customerPhone,
         pickupAddress: parcel.pickupAddress,
         deliveryAddress: parcel.deliveryAddress,
         description: parcel.description,
+        weight: parcel.weight,
+        volume: parcel.volume,
+        mode: parcel.mode,
+        pickupTime: parcel.pickupTime,
+        deliveryTime: parcel.deliveryTime,
         status: parcel.status,
         internalNotes: parcel.internalNotes,
-        deliveryDate: parcel.deliveryDate,
         assignedRider: parcel.assignedRider,
         proofUrls: parcel.proofUrls,
         createdAt: parcel.createdAt,
@@ -71,7 +76,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAuthToken(token);
+    const payload = await verifyAuthTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -105,8 +110,11 @@ export async function PATCH(
     await connectDB();
 
     const updateData: Record<string, unknown> = { ...parsed.data };
-    if (parsed.data.deliveryDate) {
-      updateData.deliveryDate = new Date(parsed.data.deliveryDate);
+    if (parsed.data.pickupTime) {
+      updateData.pickupTime = new Date(parsed.data.pickupTime);
+    }
+    if (parsed.data.deliveryTime) {
+      updateData.deliveryTime = new Date(parsed.data.deliveryTime);
     }
 
     const parcel = await Parcel.findOneAndUpdate(
@@ -146,7 +154,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAuthToken(token);
+    const payload = await verifyAuthTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
