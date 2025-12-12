@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FastKart - Courier Management System
+
+A sleek, minimal courier management web application for small courier firms. Includes an internal parcel management dashboard and public parcel tracking pages.
+
+## Tech Stack
+
+- **Next.js 16** (App Router)
+- **MongoDB** with Mongoose
+- **TanStack Query** for data fetching
+- **TailwindCSS** for styling
+- **Zod** for validation
+- **JWT** for authentication (httpOnly cookies)
+
+## Features
+
+- **Authentication**: Secure email/password login with JWT tokens stored in httpOnly cookies
+- **Dashboard**: Stats overview, status distribution chart, daily parcel counts, recent activity
+- **Parcel Management**: Create, update, delete parcels with full CRUD operations
+- **Data Table**: Search, filter by status, pagination
+- **Parcel Detail**: Status timeline, quick status updates, edit info, copy public link
+- **Public Tracking**: Customer-friendly tracking page at `/parcel/[id]` (no login required)
+- **Security**: Rate limiting, Zod validation, protected routes, UUID-based public IDs
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+- `MONGODB_URI` - Your MongoDB connection string
+- `JWT_SECRET` - Secret key for JWT signing (use a long random string)
+
+### 3. Seed the owner user (development only)
+
+Start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then call the seed endpoint:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+curl -X POST "http://localhost:3000/api/dev/seed-owner" \
+  -H "x-seed-secret: your-seed-secret"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This creates an owner account with the credentials from your `.env.local`.
 
-## Learn More
+### 4. Login
 
-To learn more about Next.js, take a look at the following resources:
+Visit `http://localhost:3000/login` and sign in with:
+- Email: `owner@example.com` (or your `SEED_OWNER_EMAIL`)
+- Password: `changeme123` (or your `SEED_OWNER_PASSWORD`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── (admin)/           # Protected admin routes
+│   │   ├── dashboard/     # Stats & overview
+│   │   ├── parcels/       # Parcel list & detail
+│   │   └── layout.tsx     # Admin shell with sidebar
+│   ├── api/
+│   │   ├── auth/          # login, logout, me
+│   │   ├── parcels/       # CRUD + stats
+│   │   ├── public/        # Public parcel endpoint
+│   │   └── dev/           # Dev-only seed endpoint
+│   ├── login/             # Login page
+│   └── parcel/[id]/       # Public tracking page
+├── components/
+│   ├── providers/         # QueryClient provider
+│   └── ui/                # Toast component
+├── contexts/
+│   └── auth-context.tsx   # Auth state management
+├── hooks/
+│   └── use-parcels.ts     # TanStack Query hooks
+└── lib/
+    ├── auth.ts            # JWT sign/verify
+    ├── auth-helpers.ts    # Server-side auth helpers
+    ├── db.ts              # MongoDB connection
+    ├── models/            # Mongoose models
+    ├── rate-limit.ts      # Rate limiting
+    ├── utils.ts           # Helpers
+    └── validators/        # Zod schemas
+```
 
-## Deploy on Vercel
+## API Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/auth/login` | Login with email/password |
+| POST | `/api/auth/logout` | Clear auth cookie |
+| GET | `/api/auth/me` | Get current user |
+| GET | `/api/parcels` | List parcels (with search, filter, pagination) |
+| POST | `/api/parcels` | Create parcel |
+| GET | `/api/parcels/stats` | Dashboard statistics |
+| GET | `/api/parcels/[id]` | Get parcel detail |
+| PATCH | `/api/parcels/[id]` | Update parcel |
+| DELETE | `/api/parcels/[id]` | Delete parcel |
+| GET | `/api/public/parcel/[id]` | Public parcel info (sanitized) |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Parcel Statuses
+
+- `PENDING` - Waiting to be picked up
+- `PICKED_UP` - Collected by courier
+- `IN_TRANSIT` - On the way
+- `OUT_FOR_DELIVERY` - Final delivery attempt
+- `DELIVERED` - Successfully delivered
+- `RETURNED` - Returned to sender
+
+## Security
+
+- JWT tokens stored in httpOnly cookies (not accessible via JavaScript)
+- Rate limiting on write operations
+- Zod validation on all API inputs
+- UUID-based public IDs (prevents enumeration)
+- Sensitive fields hidden from public endpoints
+- Middleware-based route protection
