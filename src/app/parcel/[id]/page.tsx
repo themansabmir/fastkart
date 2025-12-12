@@ -264,140 +264,124 @@ export default function PublicParcelPage({
           </div>
         )}
 
-        {/* Route Summary */}
+        {/* Customer Details */}
         <div className="bg-card rounded-lg p-6 border border-border mb-6">
-          <h2 className="text-lg font-semibold mb-4">Route Summary</h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0"
-                style={{ backgroundColor: "#ff7a00" }}
-              >
-                <span className="text-sm font-bold">A</span>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pickup Location</p>
-                <p>{parcel.pickupAddress}</p>
-              </div>
-            </div>
-            <div className="ml-4 border-l-2 border-dashed border-muted h-4" />
-            <div className="flex items-start gap-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0"
-                style={{ backgroundColor: "#ff7a00" }}
-              >
-                <span className="text-sm font-bold">B</span>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Delivery Location
-                </p>
-                <p>{parcel.deliveryAddress}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Parcel Details */}
-        <div className="bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-lg font-semibold mb-6">Parcel Details</h2>
-          
-          {/* Customer Info */}
-          <div className="pb-6 border-b border-border">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Customer Details
+          </h2>
+          <div>
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Recipient
+              Recipient Name
             </label>
             <p className="text-lg font-semibold text-foreground mt-1">{parcel.customerName}</p>
           </div>
+        </div>
 
-          {/* Times Row */}
-          <div className="grid md:grid-cols-3 gap-6 py-6 border-b border-border">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Pickup Time
-              </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Delivery Time
-              </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Expected Delivery
-              </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
-              </p>
-            </div>
-          </div>
-
-          {/* Addresses Row */}
-          <div className="grid md:grid-cols-2 gap-6 py-6 border-b border-border">
+        {/* Pickup Details */}
+        <div className="bg-card rounded-lg p-6 border border-border mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            Pickup Details
+          </h2>
+          <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Pickup Address
               </label>
               <p className="text-base text-foreground mt-1">{parcel.pickupAddress}</p>
             </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Pickup Date
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+          </div>
+        </div>
 
+        {/* Delivery Details */}
+        <div className="bg-card rounded-lg p-6 border border-border mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Truck className="h-5 w-5 text-primary" />
+            Delivery Details
+          </h2>
+          <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Delivery Address
               </label>
               <p className="text-base text-foreground mt-1">{parcel.deliveryAddress}</p>
             </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Expected Delivery Date
+                </label>
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Actual Delivery Date
+                </label>
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Parcel Specifications */}
-          <div className="grid md:grid-cols-3 gap-6 py-6 border-b border-border">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Mode
-              </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.mode || <span className="text-muted-foreground">Not set</span>}
-              </p>
+        {/* Parcel Details */}
+        <div className="bg-card rounded-lg p-6 border border-border mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Parcel Details
+          </h2>
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Mode
+                </label>
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.mode || <span className="text-muted-foreground">Not set</span>}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Weight (kg)
+                </label>
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Volume (m³)
+                </label>
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              </div>
             </div>
 
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Weight (kg)
+                Description
               </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
-              </p>
+              <p className="text-base text-foreground mt-1">{parcel.description}</p>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Volume (m³)
-              </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
-              </p>
+            <div className="pt-4 border-t border-border text-sm text-muted-foreground">
+              <p>Last updated: {formatDateTime(parcel.updatedAt)}</p>
             </div>
-          </div>
-
-          {/* Description */}
-          <div className="py-6 border-b border-border">
-            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Description
-            </label>
-            <p className="text-base text-foreground mt-1">{parcel.description}</p>
-          </div>
-
-          {/* Footer Info */}
-          <div className="pt-6 text-sm text-muted-foreground">
-            <p>Last updated: {formatDateTime(parcel.updatedAt)}</p>
           </div>
         </div>
 

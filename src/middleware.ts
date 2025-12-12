@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAuthTokenEdge } from "@/lib/auth-edge";
 
 const publicPaths = [
+  "/",
   "/login",
   "/api/auth/login",
   "/api/auth/logout",

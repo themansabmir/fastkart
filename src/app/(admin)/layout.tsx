@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   Users,
+  BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/parcels", label: "Parcels", icon: Package },
   { href: "/customers", label: "Customers", icon: Users },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 export default function AdminLayout({

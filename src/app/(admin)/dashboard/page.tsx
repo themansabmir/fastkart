@@ -13,6 +13,8 @@ import {
   RotateCcw,
   MapPin,
   Loader2,
+  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -124,6 +126,54 @@ export default function DashboardPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* Quick Analytics Summary */}
+      <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Quick Analytics</h2>
+          </div>
+          <Link
+            href="/analytics"
+            className="text-sm font-medium hover:underline flex items-center gap-1"
+            style={{ color: "#ff7a00" }}
+          >
+            View Detailed Reports
+            <TrendingUp className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-card/50 backdrop-blur rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">This Month</p>
+            <p className="text-2xl font-bold text-primary">{stats.total}</p>
+            <p className="text-xs text-muted-foreground mt-1">Total Parcels</p>
+          </div>
+          <div className="bg-card/50 backdrop-blur rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">Success Rate</p>
+            <p className="text-2xl font-bold text-green-600">
+              {stats.total > 0 
+                ? Math.round((stats.byStatus.DELIVERED || 0) / stats.total * 100)
+                : 0}%
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Delivered</p>
+          </div>
+          <div className="bg-card/50 backdrop-blur rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">Active</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {(stats.byStatus.IN_TRANSIT || 0) + (stats.byStatus.OUT_FOR_DELIVERY || 0)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">In Progress</p>
+          </div>
+          <div className="bg-card/50 backdrop-blur rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">Pending</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {stats.byStatus.PENDING || 0}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">To Process</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent activity */}

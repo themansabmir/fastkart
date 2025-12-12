@@ -93,9 +93,9 @@ export default function ParcelDetailPage({
         description: parcel.description,
         internalNotes: parcel.internalNotes || "",
         assignedRider: parcel.assignedRider || "",
-        pickupTime: parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 16) : "",
-        deliveryTime: parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 16) : "",
-        expectedDeliveryTime: parcel.expectedDeliveryTime ? new Date(parcel.expectedDeliveryTime).toISOString().slice(0, 16) : "",
+        pickupTime: parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 10) : "",
+        deliveryTime: parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 10) : "",
+        expectedDeliveryTime: parcel.expectedDeliveryTime ? new Date(parcel.expectedDeliveryTime).toISOString().slice(0, 10) : "",
       });
       setIsEditing(true);
     }
@@ -285,34 +285,39 @@ export default function ParcelDetailPage({
         </div>
       </div>
 
-      {/* Parcel Details */}
-      <div className="bg-card rounded-lg p-6 border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Parcel Details</h2>
-          {isEditing && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setEditData({});
-                }}
-                className="p-2 hover:bg-muted rounded-lg"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={updateParcel.isPending}
-                className="p-2 hover:bg-muted rounded-lg text-green-600"
-              >
-                <Check className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-        </div>
+      {/* Edit Controls */}
+      <div className="flex justify-end">
+        {isEditing ? (
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setEditData({});
+              }}
+              className="px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={updateParcel.isPending}
+              className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Check className="h-4 w-4" />
+              {updateParcel.isPending ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
-        {/* Customer Info Row */}
-        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border">
+      {/* Customer Details */}
+      <div className="bg-card rounded-lg p-6 border border-border">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Package className="h-5 w-5 text-primary" />
+          Customer Details
+        </h2>
+        <div className="grid md:grid-cols-2 gap-6">
           <div>
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Customer Name
@@ -352,73 +357,15 @@ export default function ParcelDetailPage({
             )}
           </div>
         </div>
+      </div>
 
-        {/* Times Row */}
-        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Pickup Time
-            </label>
-            {isEditing ? (
-              <input
-                type="datetime-local"
-                value={editData.pickupTime || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, pickupTime: e.target.value })
-                }
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-              />
-            ) : (
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Delivery Time
-            </label>
-            {isEditing ? (
-              <input
-                type="datetime-local"
-                value={editData.deliveryTime || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, deliveryTime: e.target.value })
-                }
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-              />
-            ) : (
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Expected Delivery Time */}
-        <div className="pb-6 border-b border-border">
-          <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Expected Delivery Time
-          </label>
-          {isEditing ? (
-            <input
-              type="datetime-local"
-              value={editData.expectedDeliveryTime || ""}
-              onChange={(e) =>
-                setEditData({ ...editData, expectedDeliveryTime: e.target.value })
-              }
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-            />
-          ) : (
-            <p className="text-base font-medium text-foreground mt-1">
-              {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
-            </p>
-          )}
-        </div>
-
-        {/* Addresses Row */}
-        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border">
+      {/* Pickup Details */}
+      <div className="bg-card rounded-lg p-6 border border-border">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary" />
+          Pickup Details
+        </h2>
+        <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Pickup Address
@@ -436,7 +383,35 @@ export default function ParcelDetailPage({
               <p className="text-base text-foreground mt-1">{parcel.pickupAddress}</p>
             )}
           </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Pickup Date
+            </label>
+            {isEditing ? (
+              <input
+                type="date"
+                value={editData.pickupTime || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, pickupTime: e.target.value })
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+              />
+            ) : (
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
+      {/* Delivery Details */}
+      <div className="bg-card rounded-lg p-6 border border-border">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Truck className="h-5 w-5 text-primary" />
+          Delivery Details
+        </h2>
+        <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Delivery Address
@@ -457,123 +432,168 @@ export default function ParcelDetailPage({
               <p className="text-base text-foreground mt-1">{parcel.deliveryAddress}</p>
             )}
           </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Expected Delivery Date
+              </label>
+              {isEditing ? (
+                <input
+                  type="date"
+                  value={editData.expectedDeliveryTime || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, expectedDeliveryTime: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                />
+              ) : (
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Actual Delivery Date
+              </label>
+              {isEditing ? (
+                <input
+                  type="date"
+                  value={editData.deliveryTime || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, deliveryTime: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                />
+              ) : (
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Parcel Details Row */}
-        <div className="grid md:grid-cols-3 gap-6 pb-6 border-b border-border">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Mode
-            </label>
-            <p className="text-base font-medium text-foreground mt-1">
-              {parcel.mode || <span className="text-muted-foreground">Not set</span>}
-            </p>
+      {/* Parcel Details */}
+      <div className="bg-card rounded-lg p-6 border border-border">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Package className="h-5 w-5 text-primary" />
+          Parcel Details
+        </h2>
+        <div className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Mode
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.mode || <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Weight (kg)
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Volume (m³)
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
           </div>
 
           <div>
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Weight (kg)
-            </label>
-            <p className="text-base font-medium text-foreground mt-1">
-              {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
-            </p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Volume (m³)
-            </label>
-            <p className="text-base font-medium text-foreground mt-1">
-              {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
-            </p>
-          </div>
-        </div>
-
-        {/* Description - Full Width */}
-        <div className="pb-6 border-b border-border">
-          <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Description
-          </label>
-          {isEditing ? (
-            <textarea
-              value={editData.description || ""}
-              onChange={(e) =>
-                setEditData({ ...editData, description: e.target.value })
-              }
-              rows={3}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
-            />
-          ) : (
-            <p className="text-base text-foreground mt-1">{parcel.description}</p>
-          )}
-        </div>
-
-        {/* Additional Info */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Assigned Rider
+              Description
             </label>
             {isEditing ? (
-              <input
-                value={editData.assignedRider || ""}
+              <textarea
+                value={editData.description || ""}
                 onChange={(e) =>
-                  setEditData({ ...editData, assignedRider: e.target.value })
+                  setEditData({ ...editData, description: e.target.value })
                 }
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-                placeholder="Not assigned"
+                rows={3}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
               />
             ) : (
-              <p className="text-base text-foreground mt-1">{parcel.assignedRider || <span className="text-muted-foreground">Not assigned</span>}</p>
+              <p className="text-base text-foreground mt-1">{parcel.description}</p>
             )}
           </div>
 
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Assigned Rider
+              </label>
+              {isEditing ? (
+                <input
+                  value={editData.assignedRider || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, assignedRider: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                  placeholder="Not assigned"
+                />
+              ) : (
+                <p className="text-base text-foreground mt-1">{parcel.assignedRider || <span className="text-muted-foreground">Not assigned</span>}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Current Status
+              </label>
+              <p className="mt-1">
+                <span
+                  className={`inline-block px-3 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(
+                    parcel.status
+                  )}`}
+                >
+                  {getStatusLabel(parcel.status)}
+                </span>
+              </p>
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Status
+              Internal Notes
             </label>
-            <p className="mt-1">
-              <span
-                className={`inline-block px-3 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(
-                  parcel.status
-                )}`}
-              >
-                {getStatusLabel(parcel.status)}
-              </span>
-            </p>
+            {isEditing ? (
+              <textarea
+                value={editData.internalNotes || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, internalNotes: e.target.value })
+                }
+                rows={3}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
+                placeholder="Private notes..."
+              />
+            ) : (
+              <p className="text-base text-muted-foreground italic mt-1">
+                {parcel.internalNotes || "No notes"}
+              </p>
+            )}
           </div>
-        </div>
 
-        {/* Internal Notes - Full Width */}
-        <div className="pt-6 border-t border-border">
-          <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Internal Notes
-          </label>
-          {isEditing ? (
-            <textarea
-              value={editData.internalNotes || ""}
-              onChange={(e) =>
-                setEditData({ ...editData, internalNotes: e.target.value })
-              }
-              rows={3}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
-              placeholder="Private notes..."
-            />
-          ) : (
-            <p className="text-base text-muted-foreground italic mt-1">
-              {parcel.internalNotes || "No notes"}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground">Created:</span>{" "}
-            {formatDateTime(parcel.createdAt)}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Updated:</span>{" "}
-            {formatDateTime(parcel.updatedAt)}
+          <div className="pt-4 border-t border-border grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Created:</span>{" "}
+              {formatDateTime(parcel.createdAt)}
+            </div>
+            <div>
+              <span className="text-muted-foreground">Updated:</span>{" "}
+              {formatDateTime(parcel.updatedAt)}
+            </div>
           </div>
         </div>
       </div>

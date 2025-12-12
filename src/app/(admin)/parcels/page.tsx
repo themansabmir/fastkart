@@ -19,6 +19,9 @@ import {
   Truck,
   ChevronDown,
   MessageCircle,
+  Eye,
+  Package,
+  CheckCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -51,6 +54,7 @@ export default function ParcelsPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [quickViewParcel, setQuickViewParcel] = useState<any>(null);
 
   // Read filters from URL query params on mount
   useEffect(() => {
@@ -484,22 +488,13 @@ export default function ParcelsPage() {
                       Customer
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Mode
-                    </th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Pickup Address
-                    </th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Delivery Address
+                      Route
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Status
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Pickup Time
-                    </th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                      Delivery Time
+                      Created
                     </th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                       Actions
@@ -542,17 +537,16 @@ export default function ParcelsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm">{parcel.mode || "-"}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-muted-foreground max-w-xs truncate">
-                          {parcel.pickupAddress}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-muted-foreground max-w-xs truncate">
-                          {parcel.deliveryAddress}
-                        </p>
+                        <div className="text-sm">
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <span className="font-medium">{parcel.pickupAddress.split(',').pop()?.trim()}</span>
+                            <span>→</span>
+                            <span className="font-medium">{parcel.deliveryAddress.split(',').pop()?.trim()}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {parcel.mode || "N/A"}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <select
@@ -575,30 +569,20 @@ export default function ParcelsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm text-muted-foreground">
-                          {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : "Not set"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-muted-foreground">
-                          {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : "Not set"}
+                          {formatDateTime(parcel.createdAt).split(',')[0]}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => {
-                              setNavigatingTo(parcel.id);
-                              router.push(`/parcels/${parcel.id}`);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQuickViewParcel(parcel);
                             }}
-                            disabled={navigatingTo === parcel.id}
-                            className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1"
-                            title="View details"
+                            className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Quick View"
                           >
-                            {navigatingTo === parcel.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "View"
-                            )}
+                            <Eye className="h-4 w-4 text-primary" />
                           </button>
                           <button
                             onClick={(e) => shareViaWhatsApp(parcel.customerPhone, parcel.publicId, e)}
@@ -1087,6 +1071,174 @@ export default function ParcelsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick View Modal */}
+      {quickViewParcel && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
+              <div>
+                <h2 className="text-xl font-bold">Parcel Details</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tracking ID: {quickViewParcel.trackingId}
+                </p>
+              </div>
+              <button
+                onClick={() => setQuickViewParcel(null)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6">
+              <div className="space-y-6">
+                {/* Status Badge */}
+                <div className="flex items-center justify-between">
+                  <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(quickViewParcel.status)}`}>
+                    {getStatusLabel(quickViewParcel.status)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Created: {formatDateTime(quickViewParcel.createdAt)}
+                  </span>
+                </div>
+
+                {/* Customer Info */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Customer Information
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Name</p>
+                      <p className="font-medium">{quickViewParcel.customerName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Phone</p>
+                      <p className="font-medium">{quickViewParcel.customerPhone}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Addresses */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2 text-sm">Pickup Address</h3>
+                    <p className="text-sm text-muted-foreground">{quickViewParcel.pickupAddress}</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2 text-sm">Delivery Address</h3>
+                    <p className="text-sm text-muted-foreground">{quickViewParcel.deliveryAddress}</p>
+                  </div>
+                </div>
+
+                {/* Parcel Details */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3">Parcel Details</h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Mode</p>
+                      <p className="font-medium">{quickViewParcel.mode || "Not set"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Weight</p>
+                      <p className="font-medium">{quickViewParcel.weight ? `${quickViewParcel.weight} kg` : "Not set"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Volume</p>
+                      <p className="font-medium">{quickViewParcel.volume ? `${quickViewParcel.volume} m³` : "Not set"}</p>
+                    </div>
+                  </div>
+                  {quickViewParcel.description && (
+                    <div className="mt-3">
+                      <p className="text-sm text-muted-foreground">Description</p>
+                      <p className="font-medium">{quickViewParcel.description}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Timeline */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3">Timeline</h3>
+                  <div className="space-y-3">
+                    {quickViewParcel.pickupTime && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Package className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Picked Up</p>
+                          <p className="text-xs text-muted-foreground">{formatDateTime(quickViewParcel.pickupTime)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {quickViewParcel.expectedDeliveryTime && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          <Truck className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Expected Delivery</p>
+                          <p className="text-xs text-muted-foreground">{formatDateTime(quickViewParcel.expectedDeliveryTime)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {quickViewParcel.deliveryTime && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Delivered</p>
+                          <p className="text-xs text-muted-foreground">{formatDateTime(quickViewParcel.deliveryTime)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Internal Notes */}
+                {quickViewParcel.internalNotes && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">Internal Notes</h3>
+                    <p className="text-sm text-muted-foreground">{quickViewParcel.internalNotes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border shrink-0">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setQuickViewParcel(null);
+                    router.push(`/parcels/${quickViewParcel.id}`);
+                  }}
+                  className="flex-1 btn-primary px-4 py-2 rounded-lg font-medium"
+                >
+                  View Full Details
+                </button>
+                <button
+                  onClick={(e) => {
+                    shareViaWhatsApp(quickViewParcel.customerPhone, quickViewParcel.publicId, e);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors flex items-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4 text-green-600" />
+                  Share
+                </button>
+                <button
+                  onClick={() => setQuickViewParcel(null)}
+                  className="px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

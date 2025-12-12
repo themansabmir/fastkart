@@ -51,9 +51,10 @@ export function Navbar({ onGetQuote }: NavbarProps) {
             </button>
             <Link
               href="/login"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              Admin Login
+              className="btn-primary px-6 py-2 rounded-lg font-semibold text-sm transition-transform duration-150 active:scale-95"
+              
+              >
+               Login
             </Link>
           </div>
 

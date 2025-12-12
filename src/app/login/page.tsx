@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -32,7 +33,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg shadow-lg p-8 border border-border">
           <div className="text-center mb-8">
+            <Link href="/">
             <h1 className="text-2xl font-bold text-foreground">FastKart</h1>
+            </Link>
             <p className="text-muted-foreground mt-2">
               Sign in to your account
             </p>
