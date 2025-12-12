@@ -20,7 +20,12 @@ export async function GET(
   try {
     await connectDB();
 
-    const parcel = await Parcel.findOne({ publicId: id }).lean();
+    // Try to find parcel by publicId first, then by trackingId
+    let parcel = await Parcel.findOne({ publicId: id }).lean();
+    
+    if (!parcel) {
+      parcel = await Parcel.findOne({ trackingId: id }).lean();
+    }
 
     if (!parcel) {
       logger.warn("Public parcel not found", { route: `/api/public/parcel/${id}`, method: "GET", ip, parcelId: id });
@@ -42,6 +47,7 @@ export async function GET(
         mode: parcel.mode,
         pickupTime: parcel.pickupTime,
         deliveryTime: parcel.deliveryTime,
+        expectedDeliveryTime: parcel.expectedDeliveryTime,
         status: parcel.status,
         createdAt: parcel.createdAt,
         updatedAt: parcel.updatedAt,

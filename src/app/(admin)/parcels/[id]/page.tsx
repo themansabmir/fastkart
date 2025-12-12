@@ -93,6 +93,9 @@ export default function ParcelDetailPage({
         description: parcel.description,
         internalNotes: parcel.internalNotes || "",
         assignedRider: parcel.assignedRider || "",
+        pickupTime: parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 16) : "",
+        deliveryTime: parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 16) : "",
+        expectedDeliveryTime: parcel.expectedDeliveryTime ? new Date(parcel.expectedDeliveryTime).toISOString().slice(0, 16) : "",
       });
       setIsEditing(true);
     }
@@ -145,7 +148,17 @@ export default function ParcelDetailPage({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Full Page Loader Overlay */}
+      {updateParcel.isPending && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-card rounded-lg p-6 flex flex-col items-center gap-3">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-sm font-medium">Updating parcel...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -253,27 +266,22 @@ export default function ParcelDetailPage({
       {/* Quick Status Update */}
       <div className="bg-card rounded-lg p-6 border border-border">
         <h2 className="text-lg font-semibold mb-4">Update Status</h2>
-        <div className="flex flex-wrap gap-2">
-          {statuses.map((status) => (
-            <button
-              key={status}
-              onClick={() => handleStatusChange(status)}
-              disabled={updateParcel.isPending}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                parcel.status === status
-                  ? "text-white"
-                  : "bg-muted hover:bg-muted/80"
-              }`}
-              style={
-                parcel.status === status ? { backgroundColor: "#ff7a00" } : {}
-              }
-            >
-              {updateParcel.isPending && (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              )}
-              {getStatusLabel(status)}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <select
+            value={parcel.status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            disabled={updateParcel.isPending}
+            className="px-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm font-medium min-w-[200px]"
+          >
+            {statuses.map((status) => (
+              <option key={status} value={status}>
+                {getStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+          {updateParcel.isPending && (
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          )}
         </div>
       </div>
 
@@ -303,153 +311,259 @@ export default function ParcelDetailPage({
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Customer Name
-              </label>
-              {isEditing ? (
-                <input
-                  value={editData.customerName || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, customerName: e.target.value })
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-                />
-              ) : (
-                <p className="font-medium">{parcel.customerName}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Customer Phone
-              </label>
-              {isEditing ? (
-                <input
-                  value={editData.customerPhone || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, customerPhone: e.target.value })
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-                />
-              ) : (
-                <p className="font-medium">{parcel.customerPhone}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Pickup Address
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={editData.pickupAddress || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, pickupAddress: e.target.value })
-                  }
-                  rows={2}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
-                />
-              ) : (
-                <p>{parcel.pickupAddress}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Delivery Address
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={editData.deliveryAddress || ""}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      deliveryAddress: e.target.value,
-                    })
-                  }
-                  rows={2}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
-                />
-              ) : (
-                <p>{parcel.deliveryAddress}</p>
-              )}
-            </div>
+        {/* Customer Info Row */}
+        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Customer Name
+            </label>
+            {isEditing ? (
+              <input
+                value={editData.customerName || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, customerName: e.target.value })
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+              />
+            ) : (
+              <p className="text-lg font-semibold text-foreground mt-1">{parcel.customerName}</p>
+            )}
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Description
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={editData.description || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, description: e.target.value })
-                  }
-                  rows={2}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
-                />
-              ) : (
-                <p>{parcel.description}</p>
-              )}
-            </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Customer Phone
+            </label>
+            {isEditing ? (
+              <input
+                value={editData.customerPhone || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, customerPhone: e.target.value })
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+              />
+            ) : (
+              <a 
+                href={`tel:${parcel.customerPhone}`}
+                className="text-lg font-semibold text-primary hover:underline mt-1 block"
+              >
+                {parcel.customerPhone}
+              </a>
+            )}
+          </div>
+        </div>
 
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Assigned Rider
-              </label>
-              {isEditing ? (
-                <input
-                  value={editData.assignedRider || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, assignedRider: e.target.value })
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-                  placeholder="Not assigned"
-                />
-              ) : (
-                <p>{parcel.assignedRider || "Not assigned"}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground">
-                Internal Notes
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={editData.internalNotes || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, internalNotes: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
-                  placeholder="Private notes..."
-                />
-              ) : (
-                <p className="text-muted-foreground">
-                  {parcel.internalNotes || "No notes"}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="text-sm text-muted-foreground">Status</label>
-              <p>
-                <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                    parcel.status
-                  )}`}
-                >
-                  {getStatusLabel(parcel.status)}
-                </span>
+        {/* Times Row */}
+        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Pickup Time
+            </label>
+            {isEditing ? (
+              <input
+                type="datetime-local"
+                value={editData.pickupTime || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, pickupTime: e.target.value })
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+              />
+            ) : (
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
               </p>
-            </div>
+            )}
           </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Delivery Time
+            </label>
+            {isEditing ? (
+              <input
+                type="datetime-local"
+                value={editData.deliveryTime || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, deliveryTime: e.target.value })
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+              />
+            ) : (
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Expected Delivery Time */}
+        <div className="pb-6 border-b border-border">
+          <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Expected Delivery Time
+          </label>
+          {isEditing ? (
+            <input
+              type="datetime-local"
+              value={editData.expectedDeliveryTime || ""}
+              onChange={(e) =>
+                setEditData({ ...editData, expectedDeliveryTime: e.target.value })
+              }
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+            />
+          ) : (
+            <p className="text-base font-medium text-foreground mt-1">
+              {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
+            </p>
+          )}
+        </div>
+
+        {/* Addresses Row */}
+        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Pickup Address
+            </label>
+            {isEditing ? (
+              <textarea
+                value={editData.pickupAddress || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, pickupAddress: e.target.value })
+                }
+                rows={2}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
+              />
+            ) : (
+              <p className="text-base text-foreground mt-1">{parcel.pickupAddress}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Delivery Address
+            </label>
+            {isEditing ? (
+              <textarea
+                value={editData.deliveryAddress || ""}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    deliveryAddress: e.target.value,
+                  })
+                }
+                rows={2}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
+              />
+            ) : (
+              <p className="text-base text-foreground mt-1">{parcel.deliveryAddress}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Parcel Details Row */}
+        <div className="grid md:grid-cols-3 gap-6 pb-6 border-b border-border">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Mode
+            </label>
+            <p className="text-base font-medium text-foreground mt-1">
+              {parcel.mode || <span className="text-muted-foreground">Not set</span>}
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Weight (kg)
+            </label>
+            <p className="text-base font-medium text-foreground mt-1">
+              {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Volume (m³)
+            </label>
+            <p className="text-base font-medium text-foreground mt-1">
+              {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
+            </p>
+          </div>
+        </div>
+
+        {/* Description - Full Width */}
+        <div className="pb-6 border-b border-border">
+          <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Description
+          </label>
+          {isEditing ? (
+            <textarea
+              value={editData.description || ""}
+              onChange={(e) =>
+                setEditData({ ...editData, description: e.target.value })
+              }
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
+            />
+          ) : (
+            <p className="text-base text-foreground mt-1">{parcel.description}</p>
+          )}
+        </div>
+
+        {/* Additional Info */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Assigned Rider
+            </label>
+            {isEditing ? (
+              <input
+                value={editData.assignedRider || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, assignedRider: e.target.value })
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                placeholder="Not assigned"
+              />
+            ) : (
+              <p className="text-base text-foreground mt-1">{parcel.assignedRider || <span className="text-muted-foreground">Not assigned</span>}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Status
+            </label>
+            <p className="mt-1">
+              <span
+                className={`inline-block px-3 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(
+                  parcel.status
+                )}`}
+              >
+                {getStatusLabel(parcel.status)}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {/* Internal Notes - Full Width */}
+        <div className="pt-6 border-t border-border">
+          <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Internal Notes
+          </label>
+          {isEditing ? (
+            <textarea
+              value={editData.internalNotes || ""}
+              onChange={(e) =>
+                setEditData({ ...editData, internalNotes: e.target.value })
+              }
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background resize-none"
+              placeholder="Private notes..."
+            />
+          ) : (
+            <p className="text-base text-muted-foreground italic mt-1">
+              {parcel.internalNotes || "No notes"}
+            </p>
+          )}
         </div>
 
         <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-4 text-sm">

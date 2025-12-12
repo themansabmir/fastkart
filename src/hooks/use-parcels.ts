@@ -15,6 +15,7 @@ interface Parcel {
   mode?: string | null;
   pickupTime?: string | null;
   deliveryTime?: string | null;
+  expectedDeliveryTime?: string | null;
   status: string;
   internalNotes?: string;
   assignedRider?: string;

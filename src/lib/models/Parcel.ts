@@ -25,6 +25,7 @@ export interface IParcel {
   mode?: TransportMode | null; // transport mode
   pickupTime?: Date | null;
   deliveryTime?: Date | null;
+  expectedDeliveryTime?: Date | null; // estimated delivery time for customer
   status: ParcelStatus;
   internalNotes?: string;
   assignedRider?: string | null;
@@ -52,6 +53,7 @@ const ParcelSchema = new Schema<IParcel>(
     },
     pickupTime: { type: Date },
     deliveryTime: { type: Date },
+    expectedDeliveryTime: { type: Date },
     status: {
       type: String,
       enum: [

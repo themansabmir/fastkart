@@ -18,8 +18,13 @@ interface PublicParcel {
   pickupAddress: string;
   deliveryAddress: string;
   description: string;
+  weight?: number | null;
+  volume?: number | null;
+  mode?: string | null;
+  pickupTime?: string | null;
+  deliveryTime?: string | null;
+  expectedDeliveryTime?: string | null;
   status: string;
-  deliveryDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -188,18 +193,13 @@ export default function PublicParcelPage({
             </div>
           </div>
 
-          {parcel.deliveryDate && (
+          {parcel.deliveryTime && (
             <div className="bg-muted/50 rounded-lg p-3">
               <p className="text-sm text-muted-foreground">
                 Expected Delivery
               </p>
               <p className="font-medium">
-                {new Date(parcel.deliveryDate).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {formatDateTime(parcel.deliveryTime)}
               </p>
             </div>
           )}
@@ -299,19 +299,95 @@ export default function PublicParcelPage({
 
         {/* Parcel Details */}
         <div className="bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-lg font-semibold mb-4">Parcel Details</h2>
-          <div className="space-y-3">
+          <h2 className="text-lg font-semibold mb-6">Parcel Details</h2>
+          
+          {/* Customer Info */}
+          <div className="pb-6 border-b border-border">
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Recipient
+            </label>
+            <p className="text-lg font-semibold text-foreground mt-1">{parcel.customerName}</p>
+          </div>
+
+          {/* Times Row */}
+          <div className="grid md:grid-cols-2 gap-6 py-6 border-b border-border">
             <div>
-              <p className="text-sm text-muted-foreground">Recipient</p>
-              <p className="font-medium">{parcel.customerName}</p>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Pickup Time
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
+              </p>
             </div>
+
             <div>
-              <p className="text-sm text-muted-foreground">Description</p>
-              <p>{parcel.description}</p>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Delivery Time
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
+              </p>
             </div>
-            <div className="pt-3 border-t border-border text-sm text-muted-foreground">
-              <p>Last updated: {formatDateTime(parcel.updatedAt)}</p>
+          </div>
+
+          {/* Addresses Row */}
+          <div className="grid md:grid-cols-2 gap-6 py-6 border-b border-border">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Pickup Address
+              </label>
+              <p className="text-base text-foreground mt-1">{parcel.pickupAddress}</p>
             </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Delivery Address
+              </label>
+              <p className="text-base text-foreground mt-1">{parcel.deliveryAddress}</p>
+            </div>
+          </div>
+
+          {/* Parcel Specifications */}
+          <div className="grid md:grid-cols-3 gap-6 py-6 border-b border-border">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Mode
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.mode || <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Weight (kg)
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Volume (m³)
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="py-6 border-b border-border">
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Description
+            </label>
+            <p className="text-base text-foreground mt-1">{parcel.description}</p>
+          </div>
+
+          {/* Footer Info */}
+          <div className="pt-6 text-sm text-muted-foreground">
+            <p>Last updated: {formatDateTime(parcel.updatedAt)}</p>
           </div>
         </div>
 

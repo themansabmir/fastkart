@@ -88,6 +88,7 @@ export default function ParcelsPage() {
       mode: "",
       pickupTime: "",
       deliveryTime: "",
+      expectedDeliveryTime: "",
       status: "PENDING" as const,
       internalNotes: "",
       assignedRider: "",
@@ -116,6 +117,7 @@ export default function ParcelsPage() {
         mode: formData.mode || null,
         pickupTime: formData.pickupTime || null,
         deliveryTime: formData.deliveryTime || null,
+        expectedDeliveryTime: formData.expectedDeliveryTime || null,
       };
       await createParcel.mutateAsync(payload);
       setShowCreateModal(false);
@@ -538,32 +540,14 @@ export default function ParcelsPage() {
                         </select>
                       </td>
                       <td className="px-4 py-3">
-                        <input
-                          type="datetime-local"
-                          value={parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 16) : ""}
-                          onChange={(e) => {
-                            updateParcel.mutate({
-                              id: parcel.id,
-                              data: { pickupTime: e.target.value || null },
-                            });
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring w-full"
-                        />
+                        <span className="text-sm text-muted-foreground">
+                          {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : "Not set"}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
-                        <input
-                          type="datetime-local"
-                          value={parcel.deliveryTime ? new Date(parcel.deliveryTime).toISOString().slice(0, 16) : ""}
-                          onChange={(e) => {
-                            updateParcel.mutate({
-                              id: parcel.id,
-                              data: { deliveryTime: e.target.value || null },
-                            });
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring w-full"
-                        />
+                        <span className="text-sm text-muted-foreground">
+                          {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : "Not set"}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
@@ -915,6 +899,17 @@ export default function ParcelsPage() {
                     className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Expected Delivery Time
+                </label>
+                <input
+                  type="datetime-local"
+                  {...register("expectedDeliveryTime")}
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
