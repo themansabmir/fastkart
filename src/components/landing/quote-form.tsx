@@ -54,9 +54,9 @@ export function QuoteForm({ isOpen, onClose }: QuoteFormProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card rounded-xl shadow-xl w-full max-w-2xl my-8">
-        <div className="flex items-center justify-between p-6 border-b border-border">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-card rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
           <h2 className="text-2xl font-bold">Get a Free Quote</h2>
           <button
             onClick={onClose}
@@ -66,8 +66,9 @@ export function QuoteForm({ isOpen, onClose }: QuoteFormProps) {
           </button>
         </div>
 
-        {submitted ? (
-          <div className="p-8 text-center">
+        <div className="overflow-y-auto flex-1">
+          {submitted ? (
+            <div className="p-8 text-center">
             <div className="h-16 w-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4">
               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -265,7 +266,8 @@ export function QuoteForm({ isOpen, onClose }: QuoteFormProps) {
               </button>
             </div>
           </form>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

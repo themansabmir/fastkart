@@ -60,22 +60,54 @@ export default function DashboardPage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div
-          className="bg-card rounded-lg p-6 border-2"
-          style={{ borderColor: "#ff7a00" }}
+        <button
+          onClick={() => {
+            setNavigatingTo("total");
+            router.push("/parcels");
+          }}
+          disabled={navigatingTo === "total"}
+          className="bg-card rounded-lg p-6 border hover:shadow-lg transition-all cursor-pointer text-left disabled:opacity-50"
+          style={{ borderColor: 'hsl(var(--border))' }}
+          onMouseEnter={(e) => {
+            if (navigatingTo !== "total") {
+              e.currentTarget.style.borderColor = '#ff7a00';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'hsl(var(--border))';
+          }}
         >
           <p className="text-sm text-muted-foreground mb-1">Total Parcels</p>
-          <p className="text-3xl font-bold" style={{ color: "#ff7a00" }}>
-            {stats.total}
-          </p>
-        </div>
+          <div className="flex items-center gap-2">
+            <p className="text-3xl font-bold">
+              {stats.total}
+            </p>
+            {navigatingTo === "total" && (
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            )}
+          </div>
+        </button>
 
         {Object.entries(stats.byStatus).map(([status, count]) => {
           const Icon = statusIcons[status] || Package;
           return (
-            <div
+            <button
               key={status}
-              className="bg-card rounded-lg p-6 border border-border"
+              onClick={() => {
+                setNavigatingTo(status);
+                router.push(`/parcels?status=${status}`);
+              }}
+              disabled={navigatingTo === status}
+              className="bg-card rounded-lg p-6 border hover:shadow-lg transition-all cursor-pointer text-left disabled:opacity-50"
+              style={{ borderColor: 'hsl(var(--border))' }}
+              onMouseEnter={(e) => {
+                if (navigatingTo !== status) {
+                  e.currentTarget.style.borderColor = '#ff7a00';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'hsl(var(--border))';
+              }}
             >
               <div className="flex items-center gap-2 mb-1">
                 <Icon className="h-4 w-4 text-muted-foreground" />
@@ -83,77 +115,16 @@ export default function DashboardPage() {
                   {getStatusLabel(status)}
                 </p>
               </div>
-              <p className="text-2xl font-bold">{count}</p>
-            </div>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{count}</p>
+                {navigatingTo === status && (
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                )}
+              </div>
+            </button>
           );
         })}
       </div>
-
-      {/* Chart - Simple bar visualization */}
-      <div className="bg-card rounded-lg p-6 border border-border">
-        <h2 className="text-lg font-semibold mb-4">Parcels by Status</h2>
-        <div className="space-y-3">
-          {Object.entries(stats.byStatus).map(([status, count]) => {
-            const percentage =
-              stats.total > 0 ? (count / stats.total) * 100 : 0;
-            return (
-              <div key={status}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>{getStatusLabel(status)}</span>
-                  <span className="text-muted-foreground">{count}</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${percentage}%`,
-                      backgroundColor: "#ff7a00",
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Daily counts chart */}
-      {stats.dailyCounts.length > 0 && (
-        <div className="bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-lg font-semibold mb-4">Parcels (Last 7 Days)</h2>
-          <div className="flex items-end gap-2 h-32">
-            {stats.dailyCounts.map((day) => {
-              const maxCount = Math.max(
-                ...stats.dailyCounts.map((d) => d.count)
-              );
-              const height =
-                maxCount > 0 ? (day.count / maxCount) * 100 : 0;
-              return (
-                <div
-                  key={day.date}
-                  className="flex-1 flex flex-col items-center gap-1"
-                >
-                  <span className="text-xs text-muted-foreground">
-                    {day.count}
-                  </span>
-                  <div
-                    className="w-full rounded-t transition-all"
-                    style={{
-                      height: `${Math.max(height, 4)}%`,
-                      backgroundColor: "#ff7a00",
-                    }}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(day.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                    })}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Recent activity */}
       <div className="bg-card rounded-lg p-6 border border-border">

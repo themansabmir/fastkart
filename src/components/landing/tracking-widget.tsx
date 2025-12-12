@@ -1,27 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Package, Truck, CheckCircle, MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Package, Truck, CheckCircle, MapPin, Loader2, AlertCircle } from "lucide-react";
 
-const demoTracking = {
-  awb: "NWC123456789",
-  status: "IN_TRANSIT",
-  timeline: [
-    { status: "PICKED_UP", label: "Picked Up", location: "Mumbai", time: "Dec 10, 10:30 AM", completed: true },
-    { status: "IN_TRANSIT", label: "In Transit", location: "Delhi Hub", time: "Dec 11, 2:15 PM", completed: true },
-    { status: "OUT_FOR_DELIVERY", label: "Out for Delivery", location: "Noida", time: "Dec 12, 9:00 AM", completed: false },
-    { status: "DELIVERED", label: "Delivered", location: "", time: "", completed: false },
-  ],
-};
+interface ParcelData {
+  trackingId: string;
+  status: string;
+  customerName: string;
+  pickupAddress: string;
+  deliveryAddress: string;
+  expectedDeliveryTime?: string;
+  updatedAt: string;
+}
 
 export function TrackingWidget() {
+  const router = useRouter();
   const [trackingId, setTrackingId] = useState("");
-  const [showDemo, setShowDemo] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [parcelData, setParcelData] = useState<ParcelData | null>(null);
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (trackingId.trim()) {
-      setShowDemo(true);
+    if (!trackingId.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+    setParcelData(null);
+
+    try {
+      const response = await fetch(`/api/public/parcel/${trackingId.trim()}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError("Parcel not found. Please check your tracking ID and try again.");
+        } else {
+          setError("Failed to fetch parcel details. Please try again later.");
+        }
+        return;
+      }
+
+      const data = await response.json();
+      setParcelData(data.parcel);
+    } catch {
+      setError("Something went wrong. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewDetails = () => {
+    if (parcelData) {
+      router.push(`/parcel/${trackingId.trim()}`);
     }
   };
 
@@ -41,72 +72,92 @@ export function TrackingWidget() {
               type="text"
               value={trackingId}
               onChange={(e) => setTrackingId(e.target.value)}
-              placeholder="Enter tracking number (e.g., NWC123456789)"
+              placeholder="Enter your tracking ID"
               className="flex-1 px-4 py-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+              disabled={isLoading}
             />
             <button
               type="submit"
-              className="btn-primary px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-transform duration-150 active:scale-95"
+              disabled={isLoading || !trackingId.trim()}
+              className="btn-primary px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-transform duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Search className="h-5 w-5" />
-              Track
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Tracking...
+                </>
+              ) : (
+                <>
+                  <Search className="h-5 w-5" />
+                  Track
+                </>
+              )}
             </button>
           </form>
 
-          {showDemo && (
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in duration-300">
+              <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="text-sm text-red-800">{error}</div>
+            </div>
+          )}
+
+          {parcelData && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="flex items-center justify-between pb-4 border-b border-border">
                 <div>
                   <div className="text-sm text-muted-foreground">Tracking ID</div>
-                  <div className="font-mono font-semibold">{demoTracking.awb}</div>
+                  <div className="font-mono font-semibold">{parcelData.trackingId}</div>
                 </div>
                 <div className="px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                  In Transit
+                  {parcelData.status.replace(/_/g, ' ')}
                 </div>
               </div>
 
               <div className="space-y-4">
-                {demoTracking.timeline.map((event, index) => (
-                  <div key={index} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                          event.completed ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {event.status === "PICKED_UP" && <Package className="h-5 w-5" />}
-                        {event.status === "IN_TRANSIT" && <Truck className="h-5 w-5" />}
-                        {event.status === "OUT_FOR_DELIVERY" && <MapPin className="h-5 w-5" />}
-                        {event.status === "DELIVERED" && <CheckCircle className="h-5 w-5" />}
-                      </div>
-                      {index < demoTracking.timeline.length - 1 && (
-                        <div
-                          className={`w-0.5 h-12 ${event.completed ? "bg-primary" : "bg-border"}`}
-                        ></div>
-                      )}
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <div className="font-semibold">{event.label}</div>
-                      {event.location && (
-                        <div className="text-sm text-muted-foreground">{event.location}</div>
-                      )}
-                      {event.time && (
-                        <div className="text-xs text-muted-foreground mt-1">{event.time}</div>
-                      )}
+                <div>
+                  <div className="text-sm text-muted-foreground">Customer</div>
+                  <div className="font-medium">{parcelData.customerName}</div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Pickup Address</div>
+                    <div className="text-sm">{parcelData.pickupAddress}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Delivery Address</div>
+                    <div className="text-sm">{parcelData.deliveryAddress}</div>
+                  </div>
+                </div>
+
+                {parcelData.expectedDeliveryTime && (
+                  <div className="p-4 bg-primary/5 rounded-lg">
+                    <div className="text-sm text-muted-foreground">Expected Delivery</div>
+                    <div className="font-medium">
+                      {new Date(parcelData.expectedDeliveryTime).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
 
-              <div className="pt-4 border-t border-border text-sm text-muted-foreground">
-                <p>Estimated delivery: Dec 12, 2025 by 6:00 PM</p>
-              </div>
+              <button
+                onClick={handleViewDetails}
+                className="w-full btn-primary px-6 py-3 rounded-lg font-semibold transition-transform duration-150 active:scale-95"
+              >
+                View Full Details
+              </button>
             </div>
           )}
 
-          {!showDemo && (
+          {!parcelData && !error && !isLoading && (
             <div className="text-center text-muted-foreground text-sm">
-              Try demo tracking ID: <span className="font-mono font-semibold">NWC123456789</span>
+              Enter your tracking ID to see parcel details
             </div>
           )}
         </div>

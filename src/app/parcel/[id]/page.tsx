@@ -11,6 +11,7 @@ import {
   RotateCcw,
   RefreshCw,
 } from "lucide-react";
+import Link from "next/link";
 
 interface PublicParcel {
   trackingId: string;
@@ -105,9 +106,9 @@ export default function PublicParcelPage({
       <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 py-12">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold" style={{ color: "#ff7a00" }}>
+            <Link href="/" className="text-2xl font-bold" style={{ color: "#ff7a00" }}>
               FastKart
-            </h1>
+            </Link>
             <p className="text-muted-foreground">Parcel Tracking</p>
           </div>
           <div className="bg-card rounded-lg p-8 border border-border text-center">
@@ -133,9 +134,9 @@ export default function PublicParcelPage({
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: "#ff7a00" }}>
+          <Link href="/" className="text-2xl font-bold" style={{ color: "#ff7a00" }}>
             FastKart
-          </h1>
+          </Link>
           <p className="text-muted-foreground">Parcel Tracking</p>
         </div>
 
@@ -193,13 +194,13 @@ export default function PublicParcelPage({
             </div>
           </div>
 
-          {parcel.deliveryTime && (
+          {parcel.expectedDeliveryTime && (
             <div className="bg-muted/50 rounded-lg p-3">
               <p className="text-sm text-muted-foreground">
                 Expected Delivery
               </p>
               <p className="font-medium">
-                {formatDateTime(parcel.deliveryTime)}
+                {formatDateTime(parcel.expectedDeliveryTime)}
               </p>
             </div>
           )}
@@ -310,7 +311,7 @@ export default function PublicParcelPage({
           </div>
 
           {/* Times Row */}
-          <div className="grid md:grid-cols-2 gap-6 py-6 border-b border-border">
+          <div className="grid md:grid-cols-3 gap-6 py-6 border-b border-border">
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Pickup Time
@@ -326,6 +327,15 @@ export default function PublicParcelPage({
               </label>
               <p className="text-base font-medium text-foreground mt-1">
                 {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Expected Delivery
+              </label>
+              <p className="text-base font-medium text-foreground mt-1">
+                {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
               </p>
             </div>
           </div>

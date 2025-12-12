@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useParcels, useCreateParcel, useUpdateParcel } from "@/hooks/use-parcels";
 import { useCustomers, useCreateCustomer } from "@/hooks/use-customers";
 import { getStatusLabel, getStatusColor, formatDateTime } from "@/lib/utils";
@@ -18,6 +18,7 @@ import {
   Loader2,
   Truck,
   ChevronDown,
+  MessageCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -34,6 +35,7 @@ const transportModes = ["AIR", "TRUCK", "TRAIN"];
 
 export default function ParcelsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
@@ -50,12 +52,33 @@ export default function ParcelsPage() {
   const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
 
+  // Read filters from URL query params on mount
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam && statuses.includes(statusParam)) {
+      setSelectedStatuses([statusParam]);
+    }
+    
+    const customerIdParam = searchParams.get("customerId");
+    if (customerIdParam) {
+      setSelectedCustomerFilter(customerIdParam);
+    }
+  }, [searchParams]);
+
   const copyPublicLink = (publicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}/parcel/${publicId}`;
     navigator.clipboard.writeText(url);
     setCopiedId(publicId);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const shareViaWhatsApp = (phone: string, publicId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const trackingUrl = `${window.location.origin}/parcel/${publicId}`;
+    const message = `Hi! 👋\n\nYour parcel is on its way! Track your order in real-time on FastKart:\n\n${trackingUrl}\n\nThank you for choosing FastKart! 🚚`;
+    const whatsappUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const { data, isLoading, error } = useParcels({
@@ -86,9 +109,9 @@ export default function ParcelsPage() {
       weight: "",
       volume: "",
       mode: "",
-      pickupTime: "",
-      deliveryTime: "",
-      expectedDeliveryTime: "",
+      pickupDate: "",
+      deliveryDate: "",
+      expectedDeliveryDate: "",
       status: "PENDING" as const,
       internalNotes: "",
       assignedRider: "",
@@ -106,6 +129,17 @@ export default function ParcelsPage() {
         return;
       }
 
+      // Convert date strings to ISO datetime strings (set time to noon to avoid timezone issues)
+      const pickupTime = formData.pickupDate 
+        ? `${formData.pickupDate}T12:00:00` 
+        : null;
+      const deliveryTime = formData.deliveryDate 
+        ? `${formData.deliveryDate}T12:00:00` 
+        : null;
+      const expectedDeliveryTime = formData.expectedDeliveryDate 
+        ? `${formData.expectedDeliveryDate}T12:00:00` 
+        : null;
+
       // Convert numeric fields and handle empty strings
       const payload = {
         ...formData,
@@ -115,9 +149,9 @@ export default function ParcelsPage() {
         weight: formData.weight ? parseFloat(formData.weight as string) : null,
         volume: formData.volume ? parseFloat(formData.volume as string) : null,
         mode: formData.mode || null,
-        pickupTime: formData.pickupTime || null,
-        deliveryTime: formData.deliveryTime || null,
-        expectedDeliveryTime: formData.expectedDeliveryTime || null,
+        pickupTime,
+        deliveryTime,
+        expectedDeliveryTime,
       };
       await createParcel.mutateAsync(payload);
       setShowCreateModal(false);
@@ -567,6 +601,13 @@ export default function ParcelsPage() {
                             )}
                           </button>
                           <button
+                            onClick={(e) => shareViaWhatsApp(parcel.customerPhone, parcel.publicId, e)}
+                            className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Share via WhatsApp"
+                          >
+                            <MessageCircle className="h-4 w-4 text-green-600" />
+                          </button>
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               copyPublicLink(parcel.publicId, e);
@@ -593,35 +634,108 @@ export default function ParcelsPage() {
               {data?.parcels.map((parcel) => (
                 <div
                   key={parcel.id}
-                  onClick={() => {
-                    setNavigatingTo(parcel.id);
-                    router.push(`/parcels/${parcel.id}`);
-                  }}
-                  className="block p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="p-3 hover:bg-muted/50 transition-colors"
                 >
+                  {/* Header Row */}
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      {navigatingTo === parcel.id && (
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      )}
-                      <div>
-                        <p className="font-medium">{parcel.customerName}</p>
-                        <p className="text-sm font-mono text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(parcel.trackingId);
+                            setCopiedId(parcel.trackingId);
+                            setTimeout(() => setCopiedId(null), 2000);
+                          }}
+                          className="p-1 hover:bg-muted rounded"
+                        >
+                          {copiedId === parcel.trackingId ? (
+                            <Check className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </button>
+                        <p className="text-xs font-mono text-muted-foreground truncate">
                           {parcel.trackingId}
                         </p>
                       </div>
+                      <p className="font-semibold text-sm">{parcel.customerName}</p>
+                      <p className="text-xs text-muted-foreground">{parcel.customerPhone}</p>
                     </div>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                      className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${getStatusColor(
                         parcel.status
                       )}`}
                     >
                       {getStatusLabel(parcel.status)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {parcel.pickupAddress} → {parcel.deliveryAddress}
-                  </p>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                    <div>
+                      <p className="text-muted-foreground">Mode</p>
+                      <p className="font-medium">{parcel.mode || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Pickup Time</p>
+                      <p className="font-medium">{parcel.pickupTime ? formatDateTime(parcel.pickupTime).split(',')[0] : "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Delivery Time</p>
+                      <p className="font-medium">{parcel.deliveryTime ? formatDateTime(parcel.deliveryTime).split(',')[0] : "-"}</p>
+                    </div>
+                  </div>
+
+                  {/* Addresses */}
+                  <div className="space-y-1 text-xs mb-3">
+                    <div>
+                      <p className="text-muted-foreground">Pickup</p>
+                      <p className="text-foreground line-clamp-1">{parcel.pickupAddress}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Delivery</p>
+                      <p className="text-foreground line-clamp-1">{parcel.deliveryAddress}</p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setNavigatingTo(parcel.id);
+                        router.push(`/parcels/${parcel.id}`);
+                      }}
+                      disabled={navigatingTo === parcel.id}
+                      className="flex-1 px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      {navigatingTo === parcel.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        "View"
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => shareViaWhatsApp(parcel.customerPhone, parcel.publicId, e)}
+                      className="px-3 py-1.5 text-xs border border-green-200 bg-green-50 rounded hover:bg-green-100 transition-colors"
+                      title="Share via WhatsApp"
+                    >
+                      <MessageCircle className="h-3 w-3 text-green-600" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyPublicLink(parcel.publicId, e);
+                      }}
+                      className="px-3 py-1.5 text-xs border border-input rounded hover:bg-muted transition-colors"
+                      title="Copy public link"
+                    >
+                      {copiedId === parcel.publicId ? (
+                        <Check className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -877,39 +991,39 @@ export default function ParcelsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Pickup Time
+                    Pickup Date
                   </label>
                   <input
-                    type="datetime-local"
-                    {...register("pickupTime")}
+                    type="date"
+                    {...register("pickupDate")}
                     className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Delivery Time
+                    Delivery Date
                   </label>
                   <input
-                    type="datetime-local"
-                    {...register("deliveryTime")}
+                    type="date"
+                    {...register("deliveryDate")}
                     className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Expected Delivery Time
-                </label>
-                <input
-                  type="datetime-local"
-                  {...register("expectedDeliveryTime")}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Expected Delivery
+                  </label>
+                  <input
+                    type="date"
+                    {...register("expectedDeliveryDate")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

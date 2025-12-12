@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCustomers, useCreateCustomer } from "@/hooks/use-customers";
 import { formatDateTime } from "@/lib/utils";
 import { Plus, Search, X, Loader2, Building2, User, Phone, MapPin } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
   const { data, isLoading, error } = useCustomers({ search });
   const createCustomer = useCreateCustomer();
@@ -100,12 +103,23 @@ export default function CustomersPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data?.customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-muted/50">
+                    <tr 
+                      key={customer.id} 
+                      onClick={() => {
+                        setNavigatingTo(customer.id);
+                        router.push(`/parcels?customerId=${customer.id}`);
+                      }}
+                      className="hover:bg-muted/50 cursor-pointer transition-colors"
+                    >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="h-4 w-4 text-primary" />
-                          </div>
+                          {navigatingTo === customer.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-4 w-4 text-primary" />
+                            </div>
+                          )}
                           <span className="font-medium">{customer.name}</span>
                         </div>
                       </td>
@@ -143,11 +157,22 @@ export default function CustomersPage() {
             {/* Mobile list */}
             <div className="md:hidden divide-y divide-border">
               {data?.customers.map((customer) => (
-                <div key={customer.id} className="p-4 space-y-3">
+                <div 
+                  key={customer.id} 
+                  onClick={() => {
+                    setNavigatingTo(customer.id);
+                    router.push(`/parcels?customerId=${customer.id}`);
+                  }}
+                  className="p-4 space-y-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <User className="h-5 w-5 text-primary" />
-                    </div>
+                    {navigatingTo === customer.id ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{customer.name}</div>
                       <div className="text-sm text-muted-foreground flex items-center gap-1">
