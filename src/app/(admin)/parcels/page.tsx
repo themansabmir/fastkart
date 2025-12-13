@@ -112,6 +112,7 @@ export default function ParcelsPage() {
       description: "",
       weight: "",
       volume: "",
+      count: "",
       mode: "",
       pickupDate: "",
       deliveryDate: "",
@@ -152,6 +153,7 @@ export default function ParcelsPage() {
         customerPhone: selectedCustomer.phone,
         weight: formData.weight ? parseFloat(formData.weight as string) : null,
         volume: formData.volume ? parseFloat(formData.volume as string) : null,
+        count: formData.count ? parseInt(formData.count as string) : null,
         mode: formData.mode || null,
         pickupTime,
         deliveryTime,
@@ -925,7 +927,7 @@ export default function ParcelsPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Weight (kg)
@@ -949,6 +951,19 @@ export default function ParcelsPage() {
                     {...register("volume")}
                     className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="0.000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Parcel Count
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    {...register("count")}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="1"
                   />
                 </div>
 
@@ -1139,7 +1154,7 @@ export default function ParcelsPage() {
                 {/* Parcel Details */}
                 <div className="bg-muted/50 rounded-lg p-4">
                   <h3 className="font-semibold mb-3">Parcel Details</h3>
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Mode</p>
                       <p className="font-medium">{quickViewParcel.mode || "Not set"}</p>
@@ -1151,6 +1166,10 @@ export default function ParcelsPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">Volume</p>
                       <p className="font-medium">{quickViewParcel.volume ? `${quickViewParcel.volume} m³` : "Not set"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Parcel Count</p>
+                      <p className="font-medium">{quickViewParcel.count || "Not set"}</p>
                     </div>
                   </div>
                   {quickViewParcel.description && (

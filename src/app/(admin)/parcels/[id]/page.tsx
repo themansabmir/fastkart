@@ -73,7 +73,17 @@ export default function ParcelDetailPage({
   };
 
   const handleSaveEdit = async () => {
-    await updateParcel.mutateAsync({ id, data: editData });
+    const payload = {
+      ...editData,
+      weight: editData.weight ? parseFloat(editData.weight) : null,
+      volume: editData.volume ? parseFloat(editData.volume) : null,
+      count: editData.count ? parseInt(editData.count) : null,
+      mode: editData.mode || null,
+      pickupTime: editData.pickupTime ? `${editData.pickupTime}T12:00:00` : null,
+      deliveryTime: editData.deliveryTime ? `${editData.deliveryTime}T12:00:00` : null,
+      expectedDeliveryTime: editData.expectedDeliveryTime ? `${editData.expectedDeliveryTime}T12:00:00` : null,
+    };
+    await updateParcel.mutateAsync({ id, data: payload });
     setIsEditing(false);
     setEditData({});
   };
@@ -91,6 +101,10 @@ export default function ParcelDetailPage({
         pickupAddress: parcel.pickupAddress,
         deliveryAddress: parcel.deliveryAddress,
         description: parcel.description,
+        weight: parcel.weight?.toString() || "",
+        volume: parcel.volume?.toString() || "",
+        count: parcel.count?.toString() || "",
+        mode: parcel.mode || "",
         internalNotes: parcel.internalNotes || "",
         assignedRider: parcel.assignedRider || "",
         pickupTime: parcel.pickupTime ? new Date(parcel.pickupTime).toISOString().slice(0, 10) : "",
@@ -482,32 +496,93 @@ export default function ParcelDetailPage({
           Parcel Details
         </h2>
         <div className="space-y-4">
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Mode
               </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.mode || <span className="text-muted-foreground">Not set</span>}
-              </p>
+              {isEditing ? (
+                <select
+                  value={editData.mode || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, mode: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                >
+                  <option value="">Select mode</option>
+                  <option value="AIR">Air</option>
+                  <option value="TRUCK">Truck</option>
+                  <option value="TRAIN">Train</option>
+                </select>
+              ) : (
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.mode || <span className="text-muted-foreground">Not set</span>}
+                </p>
+              )}
             </div>
 
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Weight (kg)
               </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
-              </p>
+              {isEditing ? (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editData.weight || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, weight: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                  placeholder="0.00"
+                />
+              ) : (
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              )}
             </div>
-
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Volume (m³)
               </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
-              </p>
+              {isEditing ? (
+                <input
+                  type="number"
+                  step="0.001"
+                  value={editData.volume || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, volume: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                  placeholder="0.000"
+                />
+              ) : (
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Parcel Count
+              </label>
+              {isEditing ? (
+                <input
+                  type="number"
+                  step="1"
+                  value={editData.count || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, count: e.target.value })
+                  }
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
+                  placeholder="1"
+                />
+              ) : (
+                <p className="text-base font-medium text-foreground mt-1">
+                  {parcel.count || <span className="text-muted-foreground">Not set</span>}
+                </p>
+              )}
             </div>
           </div>
 

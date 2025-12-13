@@ -11,6 +11,7 @@ interface Parcel {
   deliveryAddress: string;
   description: string;
   weight?: number | null;
+  count?: number | null;
   volume?: number | null;
   mode?: string | null;
   pickupTime?: string | null;

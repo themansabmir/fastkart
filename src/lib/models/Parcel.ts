@@ -22,6 +22,7 @@ export interface IParcel {
   description: string;
   weight?: number | null; // in kg
   volume?: number | null; // in cubic meters
+  count?: number | null; // number of parcels
   mode?: TransportMode | null; // transport mode
   pickupTime?: Date | null;
   deliveryTime?: Date | null;
@@ -47,6 +48,7 @@ const ParcelSchema = new Schema<IParcel>(
     description: { type: String, required: true },
     weight: { type: Number },
     volume: { type: Number },
+    count: { type: Number, default: 1 },
     mode: {
       type: String,
       enum: ["AIR", "TRUCK", "TRAIN"],
