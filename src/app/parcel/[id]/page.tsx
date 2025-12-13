@@ -21,6 +21,7 @@ interface PublicParcel {
   description: string;
   weight?: number | null;
   volume?: number | null;
+  count?: number | null;
   mode?: string | null;
   pickupTime?: string | null;
   deliveryTime?: string | null;
@@ -291,14 +292,16 @@ export default function PublicParcelPage({
               </label>
               <p className="text-base text-foreground mt-1">{parcel.pickupAddress}</p>
             </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Pickup Date
-              </label>
-              <p className="text-base font-medium text-foreground mt-1">
-                {parcel.pickupTime ? formatDateTime(parcel.pickupTime) : <span className="text-muted-foreground">Not set</span>}
-              </p>
-            </div>
+            {parcel.pickupTime && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Pickup Date
+                </label>
+                <p className="text-base font-medium text-foreground mt-1">
+                  {formatDateTime(parcel.pickupTime)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -315,24 +318,30 @@ export default function PublicParcelPage({
               </label>
               <p className="text-base text-foreground mt-1">{parcel.deliveryAddress}</p>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Expected Delivery Date
-                </label>
-                <p className="text-base font-medium text-foreground mt-1">
-                  {parcel.expectedDeliveryTime ? formatDateTime(parcel.expectedDeliveryTime) : <span className="text-muted-foreground">Not set</span>}
-                </p>
+            {(parcel.expectedDeliveryTime || parcel.deliveryTime) && (
+              <div className="grid md:grid-cols-2 gap-4">
+                {parcel.expectedDeliveryTime && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Expected Delivery Date
+                    </label>
+                    <p className="text-base font-medium text-foreground mt-1">
+                      {formatDateTime(parcel.expectedDeliveryTime)}
+                    </p>
+                  </div>
+                )}
+                {parcel.deliveryTime && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Actual Delivery Date
+                    </label>
+                    <p className="text-base font-medium text-foreground mt-1">
+                      {formatDateTime(parcel.deliveryTime)}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Actual Delivery Date
-                </label>
-                <p className="text-base font-medium text-foreground mt-1">
-                  {parcel.deliveryTime ? formatDateTime(parcel.deliveryTime) : <span className="text-muted-foreground">Not set</span>}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -343,34 +352,53 @@ export default function PublicParcelPage({
             Parcel Details
           </h2>
           <div className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Mode
-                </label>
-                <p className="text-base font-medium text-foreground mt-1">
-                  {parcel.mode || <span className="text-muted-foreground">Not set</span>}
-                </p>
-              </div>
+            {(parcel.mode || parcel.weight || parcel.volume || parcel.count) && (
+              <div className="grid md:grid-cols-2 gap-4">
+                {parcel.mode && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Mode
+                    </label>
+                    <p className="text-base font-medium text-foreground mt-1">
+                      {parcel.mode}
+                    </p>
+                  </div>
+                )}
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Weight (kg)
-                </label>
-                <p className="text-base font-medium text-foreground mt-1">
-                  {parcel.weight ? `${parcel.weight} kg` : <span className="text-muted-foreground">Not set</span>}
-                </p>
-              </div>
+                {parcel.weight && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Weight (kg)
+                    </label>
+                    <p className="text-base font-medium text-foreground mt-1">
+                      {parcel.weight} kg
+                    </p>
+                  </div>
+                )}
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Volume (m³)
-                </label>
-                <p className="text-base font-medium text-foreground mt-1">
-                  {parcel.volume ? `${parcel.volume} m³` : <span className="text-muted-foreground">Not set</span>}
-                </p>
+                {parcel.volume && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Volume (m³)
+                    </label>
+                    <p className="text-base font-medium text-foreground mt-1">
+                      {parcel.volume} m³
+                    </p>
+                  </div>
+                )}
+
+                {parcel.count && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Parcel Count
+                    </label>
+                    <p className="text-base font-medium text-foreground mt-1">
+                      {parcel.count}
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             <div>
               <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">

@@ -44,6 +44,7 @@ export async function GET(
         description: parcel.description,
         weight: parcel.weight,
         volume: parcel.volume,
+        count: parcel.count,
         mode: parcel.mode,
         pickupTime: parcel.pickupTime,
         deliveryTime: parcel.deliveryTime,

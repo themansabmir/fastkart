@@ -57,6 +57,7 @@ export default function ParcelDetailPage({
 
   const parcel = data?.parcel;
 
+
   const handleBackClick = () => {
     setIsNavigatingBack(true);
     router.push("/parcels");
@@ -69,20 +70,39 @@ export default function ParcelDetailPage({
   };
 
   const handleStatusChange = async (newStatus: string) => {
-    await updateParcel.mutateAsync({ id, data: { status: newStatus } });
+    const updateData: Record<string, unknown> = { status: newStatus };
+    
+    // Auto-set pickup time when status changes to PICKED_UP
+    if (newStatus === "PICKED_UP" && !parcel?.pickupTime) {
+      updateData.pickupTime = new Date().toISOString();
+    }
+    
+    // Auto-set delivery time when status changes to DELIVERED
+    if (newStatus === "DELIVERED" && !parcel?.deliveryTime) {
+      updateData.deliveryTime = new Date().toISOString();
+    }
+    
+    await updateParcel.mutateAsync({ id, data: updateData });
   };
 
   const handleSaveEdit = async () => {
-    const payload = {
-      ...editData,
+    const payload: Record<string, unknown> = {
+      customerName: editData.customerName,
+      customerPhone: editData.customerPhone,
+      pickupAddress: editData.pickupAddress,
+      deliveryAddress: editData.deliveryAddress,
+      description: editData.description,
       weight: editData.weight ? parseFloat(editData.weight) : null,
       volume: editData.volume ? parseFloat(editData.volume) : null,
       count: editData.count ? parseInt(editData.count) : null,
       mode: editData.mode || null,
+      internalNotes: editData.internalNotes || "",
+      assignedRider: editData.assignedRider || "",
       pickupTime: editData.pickupTime ? `${editData.pickupTime}T12:00:00` : null,
       deliveryTime: editData.deliveryTime ? `${editData.deliveryTime}T12:00:00` : null,
       expectedDeliveryTime: editData.expectedDeliveryTime ? `${editData.expectedDeliveryTime}T12:00:00` : null,
     };
+    console.log("PAYLOAD", payload)
     await updateParcel.mutateAsync({ id, data: payload });
     setIsEditing(false);
     setEditData({});

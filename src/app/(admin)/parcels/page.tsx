@@ -554,9 +554,22 @@ export default function ParcelsPage() {
                         <select
                           value={parcel.status}
                           onChange={(e) => {
+                            const newStatus = e.target.value;
+                            const updateData: Record<string, unknown> = { status: newStatus };
+                            
+                            // Auto-set pickup time when status changes to PICKED_UP
+                            if (newStatus === "PICKED_UP" && !parcel.pickupTime) {
+                              updateData.pickupTime = new Date().toISOString();
+                            }
+                            
+                            // Auto-set delivery time when status changes to DELIVERED
+                            if (newStatus === "DELIVERED" && !parcel.deliveryTime) {
+                              updateData.deliveryTime = new Date().toISOString();
+                            }
+                            
                             updateParcel.mutate({
                               id: parcel.id,
-                              data: { status: e.target.value },
+                              data: updateData,
                             });
                           }}
                           onClick={(e) => e.stopPropagation()}

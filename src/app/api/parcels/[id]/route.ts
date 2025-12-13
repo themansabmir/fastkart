@@ -56,9 +56,11 @@ export async function GET(
         description: parcel.description,
         weight: parcel.weight,
         volume: parcel.volume,
+        count: parcel.count,
         mode: parcel.mode,
         pickupTime: parcel.pickupTime,
         deliveryTime: parcel.deliveryTime,
+        expectedDeliveryTime: parcel.expectedDeliveryTime,
         status: parcel.status,
         internalNotes: parcel.internalNotes,
         assignedRider: parcel.assignedRider,
@@ -132,6 +134,9 @@ export async function PATCH(
     }
     if (parsed.data.deliveryTime) {
       updateData.deliveryTime = new Date(parsed.data.deliveryTime);
+    }
+    if (parsed.data.expectedDeliveryTime) {
+      updateData.expectedDeliveryTime = new Date(parsed.data.expectedDeliveryTime);
     }
 
     const parcel = await Parcel.findOneAndUpdate(
