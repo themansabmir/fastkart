@@ -134,15 +134,18 @@ export default function ParcelsPage() {
         return;
       }
 
-      // Convert date strings to ISO datetime strings (set time to noon to avoid timezone issues)
+      // Convert date strings to ISO datetime strings using browser's current time
+      const now = new Date();
+      const currentTime = now.toTimeString().split(' ')[0]; // Get HH:MM:SS from browser
+      
       const pickupTime = formData.pickupDate 
-        ? `${formData.pickupDate}T12:00:00` 
+        ? new Date(`${formData.pickupDate}T${currentTime}`).toISOString()
         : null;
       const deliveryTime = formData.deliveryDate 
-        ? `${formData.deliveryDate}T12:00:00` 
+        ? new Date(`${formData.deliveryDate}T${currentTime}`).toISOString()
         : null;
       const expectedDeliveryTime = formData.expectedDeliveryDate 
-        ? `${formData.expectedDeliveryDate}T12:00:00` 
+        ? new Date(`${formData.expectedDeliveryDate}T${currentTime}`).toISOString()
         : null;
 
       // Convert numeric fields and handle empty strings
