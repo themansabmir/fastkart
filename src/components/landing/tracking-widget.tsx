@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
+
 import { Search, Package, Truck, CheckCircle, MapPin, Loader2, AlertCircle } from "lucide-react";
 
 interface ParcelData {
@@ -31,7 +33,7 @@ export function TrackingWidget() {
 
     try {
       const response = await fetch(`/api/public/parcel/${trackingId.trim()}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           setError("Parcel not found. Please check your tracking ID and try again.");
@@ -146,12 +148,12 @@ export function TrackingWidget() {
                 )}
               </div>
 
-              <button
-                onClick={handleViewDetails}
-                className="w-full btn-primary px-6 py-3 rounded-lg font-semibold transition-transform duration-150 active:scale-95"
+              <Link
+                href={`/parcel/${trackingId.trim()}`}
+                className="w-full btn-primary px-6 py-3 rounded-lg font-semibold transition-transform duration-150 active:scale-95 flex justify-center items-center"
               >
                 View Full Details
-              </button>
+              </Link>
             </div>
           )}
 

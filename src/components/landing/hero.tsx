@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Package, MapPin, Clock, TrendingUp } from "lucide-react";
+import Image from "next/image";
+
 
 export function Hero({ onGetQuote, onTrackParcel }: { onGetQuote: () => void; onTrackParcel: () => void }) {
   return (
     <section className="relative bg-background pt-20 pb-12 md:pt-32 md:pb-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
@@ -59,11 +61,13 @@ export function Hero({ onGetQuote, onTrackParcel }: { onGetQuote: () => void; on
 
           <div className="relative hidden lg:block">
             <div className="relative z-10">
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=800&h=600&fit=crop"
                 alt="Courier delivery service in India"
+                width={800}
+                height={600}
                 className="rounded-2xl shadow-2xl"
-                loading="eager"
+                priority
               />
             </div>
             <div className="absolute -bottom-6 -right-6 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
